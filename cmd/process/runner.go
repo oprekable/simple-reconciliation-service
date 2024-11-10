@@ -18,7 +18,7 @@ func Runner(cmd *cobra.Command, _ []string) (er error) {
 
 	app, cleanup, er := inject.WireApp(
 		cmd.Context(),
-		root.RootEmbedFS,
+		root.EmbedFS,
 		cconfig.AppName(variable.AppName),
 		cconfig.TimeZone(root.FlagTZValue),
 		err.RegisteredErrorType,

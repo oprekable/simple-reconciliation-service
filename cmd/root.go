@@ -72,7 +72,7 @@ func init() {
 }
 
 func Execute(embedFS *embed.FS) {
-	root.RootEmbedFS = embedFS
+	root.EmbedFS = embedFS
 	if er := rootCmd.Execute(); er != nil {
 		fmt.Println(er)
 	}

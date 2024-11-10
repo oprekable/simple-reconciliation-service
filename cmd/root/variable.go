@@ -20,7 +20,7 @@ const (
 	FlagTimeZoneUsage       string = `time zone settings`
 )
 
-var RootEmbedFS *embed.FS
+var EmbedFS *embed.FS
 var SampleUsageFlags = "--systemtrxpath=/tmp/system --banktrxpath=/tmp/bank --archivepath= /tmp/archive --listbank=bca,mandiri,bri,danamon"
 var ProcessUsageFlags = "--systemtrxpath=/tmp/system --banktrxpath=/tmp/bank --archivepath= /tmp/archive --listbank=bca,mandiri,bri,danamon --from=2024/11/10 --from=2024/11/11"
 var SystemTRXPath string
