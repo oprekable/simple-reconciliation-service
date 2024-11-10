@@ -29,6 +29,11 @@ func Runner(cmd *cobra.Command, _ []string) (er error) {
 	}
 
 	app.GetComponents().Config.Reconciliation.Action = cmd.Use
+	app.GetComponents().Config.Reconciliation.SystemTRXPath = root.SystemTRXPath
+	app.GetComponents().Config.Reconciliation.BankTRXPath = root.BankTRXPath
+	app.GetComponents().Config.Reconciliation.ArchivePath = root.ArchivePath
+	app.GetComponents().Config.Reconciliation.ListBank = root.ListBank
+
 	atexit.Add(cleanup)
 	app.Start()
 	return nil
