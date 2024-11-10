@@ -1,0 +1,80 @@
+project_name: simple-reconciliation-service
+env:
+  - GO111MODULE=on
+  - GOPROXY=https://proxy.golang.org
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - id: simple-reconciliation-service-windows-amd64
+    binary: ./apps/simple-reconciliation-service-{{ .Os }}-{{ .Arch }}/application
+    ldflags: -s -w -X simple-reconciliation-service/variable.GitCommit={{ .ShortCommit }} -X simple-reconciliation-service/variable.Version={{.Version}} -X simple-reconciliation-service/variable.Environment=default -X simple-reconciliation-service/variable.BuildDate={{.Date}} -X simple-reconciliation-service/variable.TimeZone=Asia/Jakarta
+    env:
+      - GO111MODULE=on
+    goos:
+      - windows
+    goarch:
+      - amd64
+  - id: simple-reconciliation-service-darwin-arm64
+    binary: ./apps/simple-reconciliation-service-{{ .Os }}-{{ .Arch }}/application
+    ldflags: -s -w -X simple-reconciliation-service/variable.GitCommit={{ .ShortCommit }} -X simple-reconciliation-service/variable.Version={{.Version}} -X simple-reconciliation-service/variable.Environment=default -X simple-reconciliation-service/variable.BuildDate={{.Date}} -X simple-reconciliation-service/variable.TimeZone=Asia/Jakarta
+    env:
+      - GO111MODULE=on
+    goos:
+      - darwin
+    goarch:
+      - arm64
+release:
+  draft: false
+
+archives:
+  - id: "simple-reconciliation-service-windows-amd64"
+    builds: [ 'simple-reconciliation-service-windows-amd64' ]
+    format: zip
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    files:
+      - src: 'params/*.toml'
+        dst: apps/simple-reconciliation-service-{{ .Os }}-{{ .Arch }}/params
+        strip_parent: true
+        info:
+          owner: root
+          group: root
+          mode: 0755
+      - src: 'params/*.env'
+        dst: apps/simple-reconciliation-service-{{ .Os }}-{{ .Arch }}/params
+        strip_parent: true
+        info:
+          owner: root
+          group: root
+          mode: 0755
+  - id: "simple-reconciliation-service-darwin-arm64"
+    builds: [ 'simple-reconciliation-service-darwin-arm64' ]
+    format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    files:
+      - src: 'params/*.toml'
+        dst: apps/simple-reconciliation-service-{{ .Os }}-{{ .Arch }}/params
+        strip_parent: true
+        info:
+          owner: root
+          group: root
+          mode: 0755
+      - src: 'params/*.env'
+        dst: apps/simple-reconciliation-service-{{ .Os }}-{{ .Arch }}/params
+        strip_parent: true
+        info:
+          owner: root
+          group: root
+          mode: 0755
+checksum:
+  name_template: "{{ .ProjectName }}_checksums.txt"

@@ -1,0 +1,5 @@
+[reconciliation]
+system_trx_path = "/tmp/system"
+bank_trx_path= "/tmp/bank"
+archive_path = "/tmp/archive"
+list_bank = [ "bca", "danamon", "bri", "mandiri" ]
