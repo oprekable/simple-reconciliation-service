@@ -33,8 +33,8 @@ const (
 )
 
 var EmbedFS *embed.FS
-var SampleUsageFlags = "--systemtrxpath=/tmp/system --banktrxpath=/tmp/bank --archivepath= /tmp/archive --listbank=bca,mandiri,bri,danamon"
-var ProcessUsageFlags = "--systemtrxpath=/tmp/system --banktrxpath=/tmp/bank --archivepath= /tmp/archive --listbank=bca,mandiri,bri,danamon --from=2024/11/10 --from=2024/11/11"
+var SampleUsageFlags = "--systemtrxpath=/tmp/system --banktrxpath=/tmp/bank --reportpath=/tmp/report --listbank=bca,mandiri,bri,danamon"
+var ProcessUsageFlags = "--systemtrxpath=/tmp/system --banktrxpath=/tmp/bank --reportpath=/tmp/report --listbank=bca,mandiri,bri,danamon --from=2024-11-20 --from=2024-11-21"
 var FlagSystemTRXPathValue string
 var FlagBankTRXPathValue string
 var FlagReportTRXPathValue string

@@ -7,7 +7,7 @@ before:
     - go mod tidy
 builds:
   - id: simple-reconciliation-service-windows-amd64
-    binary: ./apps/simple-reconciliation-service-{{ .Os }}-{{ .Arch }}/application
+    binary: ./apps/simple-reconciliation-service-{{ .Os }}-{{ .Arch }}/simple-reconciliation-service
     ldflags: -s -w -X simple-reconciliation-service/variable.GitCommit={{ .ShortCommit }} -X simple-reconciliation-service/variable.Version={{.Version}} -X simple-reconciliation-service/variable.Environment=default -X simple-reconciliation-service/variable.BuildDate={{.Date}} -X simple-reconciliation-service/variable.TimeZone=Asia/Jakarta
     env:
       - GO111MODULE=on
@@ -17,7 +17,7 @@ builds:
     goarch:
       - amd64
   - id: simple-reconciliation-service-darwin-arm64
-    binary: ./apps/simple-reconciliation-service-{{ .Os }}-{{ .Arch }}/application
+    binary: ./apps/simple-reconciliation-service-{{ .Os }}-{{ .Arch }}/simple-reconciliation-service
     ldflags: -s -w -X simple-reconciliation-service/variable.GitCommit={{ .ShortCommit }} -X simple-reconciliation-service/variable.Version={{.Version}} -X simple-reconciliation-service/variable.Environment=default -X simple-reconciliation-service/variable.BuildDate={{.Date}} -X simple-reconciliation-service/variable.TimeZone=Asia/Jakarta
     env:
       - GO111MODULE=on
