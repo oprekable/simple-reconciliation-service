@@ -3,7 +3,6 @@ package cli
 import (
 	"context"
 	"errors"
-	"os"
 	"simple-reconciliation-service/internal/app/component"
 	"simple-reconciliation-service/internal/app/handler/hcli"
 	"simple-reconciliation-service/internal/app/repository"
@@ -51,24 +50,23 @@ func (c *Cli) Name() string {
 }
 
 func (c *Cli) Start(eg *errgroup.Group) {
-	eg.Go(func() error {
+	eg.Go(func() (err error) {
 		ctx := c.ctx
 
 		for k, v := range c.handlers {
 			if v.Name() == c.comp.Config.Action {
-				err := c.handlers[k].Exec()
+				err = c.handlers[k].Exec()
 				if err != nil {
 					log.Err(ctx, "error", err)
-					os.Exit(1)
 				} else {
-					os.Exit(0)
+					err = errors.New("done")
 				}
+
+				return err
 			}
 		}
 
-		log.Err(ctx, "error", errors.New("command not found"))
-		os.Exit(1)
-		return nil
+		return err
 	})
 }
 

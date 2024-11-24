@@ -72,16 +72,6 @@ func (lc Caller) MarshalZerologObject(e *zerolog.Event) {
 		Str("function", lc.Function)
 }
 
-func AddStrWithKey(ctx context.Context, key, msg string) {
-	zerolog.Ctx(ctx).UpdateContext(func(c zerolog.Context) zerolog.Context {
-		return c.Str(key, msg)
-	})
-}
-
-func AddStr(ctx context.Context, msg string) {
-	AddStrWithKey(ctx, strconv.FormatInt(time.Now().UnixNano(), 10), msg)
-}
-
 func AddErr(ctx context.Context, er error) {
 	if er == nil {
 		return
@@ -107,32 +97,6 @@ func AddStrOrAddErr(ctx context.Context, er error, strError string, strInfo stri
 	zerolog.Ctx(ctx).UpdateContext(func(c zerolog.Context) zerolog.Context {
 		return c.Str(strconv.FormatInt(time.Now().UnixNano(), 10), strInfo)
 	})
-}
-
-func Panic(ctx context.Context, msg string, er error) {
-	zerolog.Ctx(ctx).
-		Panic().
-		Err(er).
-		Ctx(ctx).
-		Caller(2).
-		Msg(msg)
-}
-
-func MsgOrErr(ctx context.Context, msg string, er error) {
-	if er != nil {
-		zerolog.Ctx(ctx).
-			Err(er).
-			Ctx(ctx).
-			Caller(2).
-			Msg(msg)
-
-		return
-	}
-
-	zerolog.Ctx(ctx).
-		Info().
-		Ctx(ctx).
-		Msg(msg)
 }
 
 func Msg(ctx context.Context, msg string) {

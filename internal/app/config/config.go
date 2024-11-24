@@ -7,6 +7,6 @@ import (
 
 type Data struct {
 	core.App
+	core.Sqlite
 	reconciliation.Reconciliation
-	core.Postgres
 }

@@ -1,11 +1,20 @@
 package repository
 
-import "github.com/google/wire"
+import (
+	"simple-reconciliation-service/internal/app/repository/sample"
 
-func NewRepositories() *Repositories {
-	return &Repositories{}
+	"github.com/google/wire"
+)
+
+func NewRepositories(
+	repoSample sample.Repository,
+) *Repositories {
+	return &Repositories{
+		RepoSample: repoSample,
+	}
 }
 
 var Set = wire.NewSet(
+	sample.Set,
 	NewRepositories,
 )

@@ -109,6 +109,10 @@ func (a *AppContext) Start() {
 		return shutdown.TermSignalTrap().Wait(a.ctx, func() {
 			atexit.AtExit()
 
+			if context.Cause(a.ctx).Error() == "done" {
+				os.Exit(0)
+			}
+
 			if a.ctx.Err() != nil {
 				os.Exit(1)
 			} else {

@@ -1,11 +1,20 @@
 package service
 
-import "github.com/google/wire"
+import (
+	"simple-reconciliation-service/internal/app/service/sample"
 
-func NewServices() *Services {
-	return &Services{}
+	"github.com/google/wire"
+)
+
+func NewServices(
+	svcSample sample.Service,
+) *Services {
+	return &Services{
+		SvcSample: svcSample,
+	}
 }
 
 var Set = wire.NewSet(
+	sample.Set,
 	NewServices,
 )

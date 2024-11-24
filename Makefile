@@ -29,12 +29,17 @@ go-lint:
 staticcheck:
 	@staticcheck ./...
 
-.PHONY: go-lint-fix-struct-staticcheck
-go-lint-fix-struct-staticcheck:
+.PHONY: govulncheck
+govulncheck:
+	@govulncheck ./...
+
+.PHONY: go-lint-fix-struct-staticcheck-govulncheck
+go-lint-fix-struct-staticcheck-govulncheck: generate
 	@go mod tidy
 	@golangci-lint run ./... --fix
 	@staticcheck ./...
 	@fieldalignment -fix ./...
+	@govulncheck ./...
 
 .PHONY: test
 test:
@@ -44,6 +49,10 @@ test:
 .PHONY: run
 run:
 	@env $$(cat ".env" | grep -Ev '^#' | xargs) go run main.go
+
+.PHONY: go-version
+go-version:
+	@go version
 
 .PHONY: go-env
 go-env:

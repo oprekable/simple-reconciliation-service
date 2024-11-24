@@ -14,19 +14,20 @@ import (
 	"simple-reconciliation-service/internal/app/component/cconfig"
 	"simple-reconciliation-service/internal/app/component/cerror"
 	"simple-reconciliation-service/internal/app/component/clogger"
+	"simple-reconciliation-service/internal/app/component/csqlite"
 	"simple-reconciliation-service/internal/app/err/core"
 	"simple-reconciliation-service/internal/app/handler/hcli"
 	"simple-reconciliation-service/internal/app/repository"
+	"simple-reconciliation-service/internal/app/repository/sample"
 	"simple-reconciliation-service/internal/app/server"
 	"simple-reconciliation-service/internal/app/server/cli"
 	"simple-reconciliation-service/internal/app/service"
+	sample2 "simple-reconciliation-service/internal/app/service/sample"
 )
 
 // Injectors from inject.go:
 
 func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz cconfig.TimeZone, errType []core.ErrorType) (*appcontext.AppContext, func(), error) {
-	repositories := repository.NewRepositories()
-	services := service.NewServices()
 	configPaths := _wireConfigPathsValue
 	config, err := cconfig.NewConfig(ctx, embedFS, configPaths, appName, tz)
 	if err != nil {
@@ -35,7 +36,18 @@ func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz
 	logger := clogger.NewLogger(ctx)
 	erType := cerror.ProvideErType(errType)
 	cerrorError := cerror.NewError(erType)
-	components := component.NewComponents(config, logger, cerrorError)
+	dbSqlite, err := csqlite.NewDBSqlite(config, logger)
+	if err != nil {
+		return nil, nil, err
+	}
+	components := component.NewComponents(config, logger, cerrorError, dbSqlite)
+	db, err := sample.ProviderDB(components)
+	if err != nil {
+		return nil, nil, err
+	}
+	repositories := repository.NewRepositories(db)
+	svc := sample2.ProviderSvc(components, repositories)
+	services := service.NewServices(svc)
 	v := hcli.ProviderHandlers()
 	cliCli, err := cli.NewCli(components, services, repositories, v)
 	if err != nil {

@@ -26,7 +26,7 @@ func (h *Handler) Exec() error {
 	fmt.Println(name)
 	fmt.Println(h.comp.Config.Reconciliation.BankTRXPath)
 	fmt.Println(h.comp.Config.Reconciliation.SystemTRXPath)
-	fmt.Println(h.comp.Config.Reconciliation.ArchivePath)
+	fmt.Println(h.comp.Config.Reconciliation.ReportTRXPath)
 	fmt.Println(h.comp.Config.Reconciliation.ListBank)
 	return nil
 }

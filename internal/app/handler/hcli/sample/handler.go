@@ -1,7 +1,7 @@
 package sample
 
 import (
-	"fmt"
+	"context"
 	"simple-reconciliation-service/internal/app/component"
 	"simple-reconciliation-service/internal/app/repository"
 	"simple-reconciliation-service/internal/app/service"
@@ -19,16 +19,12 @@ func NewHandler() *Handler {
 	return &Handler{}
 }
 
-func (h *Handler) Exec() error {
+func (h *Handler) Exec() (err error) {
 	if h.comp == nil || h.svc == nil || h.repo == nil {
 		return nil
 	}
-	fmt.Println(name)
-	fmt.Println(h.comp.Config.Reconciliation.BankTRXPath)
-	fmt.Println(h.comp.Config.Reconciliation.SystemTRXPath)
-	fmt.Println(h.comp.Config.Reconciliation.ArchivePath)
-	fmt.Println(h.comp.Config.Reconciliation.ListBank)
-	return nil
+	_, err = h.svc.SvcSample.GenerateReport(context.Background())
+	return err
 }
 
 func (h *Handler) Name() string {
