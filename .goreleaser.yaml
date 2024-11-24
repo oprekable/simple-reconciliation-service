@@ -11,6 +11,7 @@ builds:
     ldflags: -s -w -X simple-reconciliation-service/variable.GitCommit={{ .ShortCommit }} -X simple-reconciliation-service/variable.Version={{.Version}} -X simple-reconciliation-service/variable.Environment=default -X simple-reconciliation-service/variable.BuildDate={{.Date}} -X simple-reconciliation-service/variable.TimeZone=Asia/Jakarta
     env:
       - GO111MODULE=on
+      - CGO_ENABLED=0
     goos:
       - windows
     goarch:
@@ -20,6 +21,7 @@ builds:
     ldflags: -s -w -X simple-reconciliation-service/variable.GitCommit={{ .ShortCommit }} -X simple-reconciliation-service/variable.Version={{.Version}} -X simple-reconciliation-service/variable.Environment=default -X simple-reconciliation-service/variable.BuildDate={{.Date}} -X simple-reconciliation-service/variable.TimeZone=Asia/Jakarta
     env:
       - GO111MODULE=on
+      - CGO_ENABLED=0
     goos:
       - darwin
     goarch:
