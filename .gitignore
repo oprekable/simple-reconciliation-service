@@ -18,6 +18,7 @@ vendor/
 
 # Tools
 .idea
+.chat
 
 .go/
 .go-cache/
