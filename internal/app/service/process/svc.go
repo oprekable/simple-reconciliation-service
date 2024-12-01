@@ -143,6 +143,7 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs) (returnS
 					var bankParser parser.ReconcileBankData
 					f, er := afs.Open(fileBankPath[k])
 					if er != nil {
+						_ = f.Close()
 						return nil, err
 					}
 
@@ -180,8 +181,11 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs) (returnS
 					log.Msg(c, "[process.NewSvc] GenerateReconciliation RepoProcess.ImportBankTrx ("+bank+") executed")
 
 					if er != nil {
+						_ = f.Close()
 						return nil, er
 					}
+
+					_ = f.Close()
 				}
 			}
 
