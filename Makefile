@@ -48,15 +48,15 @@ test:
 
 .PHONY: run
 run:
-	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go
+	@time env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go
 
 .PHONY: run-sample
 run-sample:
-	 @env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go sample -a 20000
+	 @time env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go sample -a 50000
 
 .PHONY: run-process
 run-process:
-	 @env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go process
+	 @time env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go process
 
 .PHONY: go-version
 go-version:

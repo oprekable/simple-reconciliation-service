@@ -54,7 +54,7 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs) (returnS
 			)
 
 			log.AddErr(c, er)
-			log.Msg(c, "[process.NewSvc] RepoProcess.Pre executed")
+			log.Msg(c, "[process.NewSvc] GenerateReconciliation RepoProcess.Pre executed")
 
 			return nil, err
 		},
@@ -71,6 +71,9 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs) (returnS
 
 				return nil
 			})
+
+			//log.AddErr(c, er)
+			//log.Msg(c, "[process.NewSvc] GenerateReconciliation afero.Walk SystemTRXPath executed")
 
 			if er != nil {
 				return nil, er
@@ -91,6 +94,9 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs) (returnS
 					c,
 					systemParser,
 				)
+
+				log.AddErr(c, er)
+				log.Msg(c, "[process.NewSvc] GenerateReconciliation RepoProcess.ImportSystemTrx executed")
 
 				if er != nil {
 					return nil, er
@@ -123,6 +129,9 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs) (returnS
 
 				return nil
 			})
+
+			//log.AddErr(c, er)
+			//log.Msg(c, "[process.NewSvc] GenerateReconciliation afero.Walk BankTRXPath executed")
 
 			if er != nil {
 				return nil, er
@@ -167,6 +176,9 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs) (returnS
 						bankParser,
 					)
 
+					log.AddErr(c, er)
+					log.Msg(c, "[process.NewSvc] GenerateReconciliation RepoProcess.ImportBankTrx ("+bank+") executed")
+
 					if er != nil {
 						return nil, er
 					}
@@ -181,7 +193,7 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs) (returnS
 			)
 
 			log.AddErr(c, er)
-			log.Msg(c, "[process.NewSvc] RepoProcess.Post executed")
+			log.Msg(c, "[process.NewSvc] GenerateReconciliation RepoProcess.Post executed")
 
 			return nil, er
 		},
