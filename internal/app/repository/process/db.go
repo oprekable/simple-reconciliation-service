@@ -27,10 +27,11 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 }
 
 func (d *DB) ImportSystemTrx(ctx context.Context, systemParser parser.ReconcileSystemData) (err error) {
+	sqlInsertPattern := "INSERT INTO system_trx VALUES ('%s', '%s', '%s', %f);\n"
 	s, er := systemParser.ToSql(
 		ctx,
 		true,
-		"INSERT INTO system_trx VALUES ('%s', '%s', '%s', %f);\n",
+		sqlInsertPattern,
 	)
 	if er != nil {
 		return er
@@ -44,10 +45,11 @@ func (d *DB) ImportSystemTrx(ctx context.Context, systemParser parser.ReconcileS
 }
 
 func (d *DB) ImportBankTrx(ctx context.Context, bank string, bankParser parser.ReconcileBankData) (err error) {
+	sqlInsertPattern := "INSERT INTO bank_trx VALUES ('%s', '%s', '%s', '%s', %f);\n"
 	s, er := bankParser.ToSql(
 		ctx,
 		true,
-		"INSERT INTO bank_trx VALUES ('%s', '%s', '%s', '%s', %f);\n",
+		sqlInsertPattern,
 	)
 	if er != nil {
 		return er
