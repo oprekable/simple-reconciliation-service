@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
+	"fmt"
 	"io"
 	"math"
 	"simple-reconciliation-service/internal/pkg/utils/log"
 
-	loparallel "github.com/samber/lo/parallel"
+	"github.com/samber/lo"
 
 	"github.com/ulule/deepcopier"
 
@@ -113,7 +114,7 @@ func (d *BNIBank) ToBankTrxData(ctx context.Context, isHaveHeader bool) (returnD
 	return
 }
 
-func (d *BNIBank) ToSql(ctx context.Context, isHaveHeader bool) (returnData string, err error) {
+func (d *BNIBank) ToSql(ctx context.Context, isHaveHeader bool, sqlPattern string) (returnData string, err error) {
 	data, err := d.ToBankTrxData(ctx, isHaveHeader)
 	if err != nil {
 		log.AddErr(ctx, err)
@@ -122,8 +123,17 @@ func (d *BNIBank) ToSql(ctx context.Context, isHaveHeader bool) (returnData stri
 
 	var buffer bytes.Buffer
 
-	loparallel.ForEach(data, func(d *BankTrxData, _ int) {
-		buffer.WriteString(d.UniqueIdentifier)
+	lo.ForEach(data, func(d *BankTrxData, _ int) {
+		buffer.WriteString(
+			fmt.Sprintf(
+				sqlPattern,
+				d.UniqueIdentifier,
+				d.Date,
+				d.Bank,
+				d.Type,
+				d.Amount,
+			),
+		)
 	})
 
 	returnData = buffer.String()

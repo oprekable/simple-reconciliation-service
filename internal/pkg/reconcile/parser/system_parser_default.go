@@ -1,11 +1,15 @@
 package parser
 
 import (
+	"bytes"
 	"context"
 	"encoding/csv"
+	"fmt"
 	"io"
 	"math"
 	"simple-reconciliation-service/internal/pkg/utils/log"
+
+	"github.com/samber/lo"
 
 	"github.com/ulule/deepcopier"
 
@@ -32,11 +36,7 @@ func (u *DefaultSystemTrxData) Amount() float64 {
 }
 
 func (u *DefaultSystemTrxData) Type() TrxType {
-	if u.DefaultAmount <= 0 {
-		return DEBIT
-	}
-
-	return CREDIT
+	return TrxType(u.DefaultType)
 }
 
 type DefaultSystem struct {
@@ -100,5 +100,30 @@ func (d *DefaultSystem) ToSystemTrxData(ctx context.Context, isHaveHeader bool) 
 		returnData = append(returnData, systemTrxData)
 	}
 
+	return
+}
+
+func (d *DefaultSystem) ToSql(ctx context.Context, isHaveHeader bool, sqlPattern string) (returnData string, err error) {
+	data, err := d.ToSystemTrxData(ctx, isHaveHeader)
+	if err != nil {
+		log.AddErr(ctx, err)
+		return returnData, err
+	}
+
+	var buffer bytes.Buffer
+
+	lo.ForEach(data, func(d *SystemTrxData, _ int) {
+		buffer.WriteString(
+			fmt.Sprintf(
+				sqlPattern,
+				d.TrxID,
+				d.TransactionTime,
+				d.Type,
+				d.Amount,
+			),
+		)
+	})
+
+	returnData = buffer.String()
 	return
 }

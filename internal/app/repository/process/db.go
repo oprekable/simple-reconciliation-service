@@ -3,6 +3,7 @@ package process
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser"
 	"time"
 )
@@ -26,10 +27,16 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 }
 
 func (d *DB) ImportSystemTrx(ctx context.Context, systemParser parser.ReconcileSystemData) (err error) {
-	_, er := systemParser.ToSystemTrxData(ctx, true)
+	s, er := systemParser.ToSql(
+		ctx,
+		true,
+		"INSERT INTO system_trx VALUES ('%s', '%s', '%s', %f);\n",
+	)
 	if er != nil {
 		return er
 	}
+
+	fmt.Println(s)
 
 	// TODO: import data to DB
 
@@ -37,10 +44,15 @@ func (d *DB) ImportSystemTrx(ctx context.Context, systemParser parser.ReconcileS
 }
 
 func (d *DB) ImportBankTrx(ctx context.Context, bank string, bankParser parser.ReconcileBankData) (err error) {
-	_, er := bankParser.ToBankTrxData(ctx, true)
+	s, er := bankParser.ToSql(
+		ctx,
+		true,
+		"INSERT INTO bank_trx VALUES ('%s', '%s', '%s', '%s', %f);\n",
+	)
 	if er != nil {
 		return er
 	}
+	fmt.Println(s)
 
 	// TODO: import data to DB
 	return

@@ -52,7 +52,7 @@ run:
 
 .PHONY: run-sample
 run-sample:
-	 @time env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go sample -a 50000
+	 @time env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go sample -a 200
 
 .PHONY: run-process
 run-process:
