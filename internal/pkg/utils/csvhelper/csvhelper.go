@@ -19,7 +19,7 @@ func StructToCSVFile(ctx context.Context, fs afero.Fs, filePath string, structDa
 			basePath := filepath.Dir(filePath)
 
 			if isDeleteDirectory {
-				return filepath.Glob(basePath + "/*")
+				return afero.Glob(fs, basePath+"/*")
 			}
 
 			return nil, nil
@@ -56,6 +56,7 @@ func StructToCSVFile(ctx context.Context, fs afero.Fs, filePath string, structDa
 	return err
 }
 
+//
 //func CSVFileToStruct[T any](ctx context.Context, fs afero.Fs, bank string, filePath string) (returnData T, err error) {
 //	_, err := hunch.Waterfall(
 //		ctx,

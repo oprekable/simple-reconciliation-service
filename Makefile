@@ -50,6 +50,14 @@ test:
 run:
 	@env $$(cat ".env" | grep -Ev '^#' | xargs) go run main.go
 
+.PHONY: run-sample
+run-sample:
+	 @env $$(cat ".env" | grep -Ev '^#' | xargs) go run main.go sample -a 20000
+
+.PHONY: run-process
+run-process:
+	 @env $$(cat ".env" | grep -Ev '^#' | xargs) go run main.go process
+
 .PHONY: go-version
 go-version:
 	@go version

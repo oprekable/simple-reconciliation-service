@@ -15,60 +15,60 @@ import (
 	"github.com/jszwec/csvutil"
 )
 
-type BCABankTrxData struct {
-	BCAUniqueIdentifier string  `csv:"uniqueIdentifier"`
-	BCADate             string  `csv:"date"`
-	BCAAmount           float64 `csv:"amount"`
+type BNIBankTrxData struct {
+	BNIUniqueIdentifier string  `csv:"BNIUniqueIdentifier"`
+	BNIDate             string  `csv:"BNIDate"`
+	BNIAmount           float64 `csv:"BNIAmount"`
 }
 
-func (u *BCABankTrxData) UniqueIdentifier() string {
-	return u.BCAUniqueIdentifier
+func (u *BNIBankTrxData) UniqueIdentifier() string {
+	return u.BNIUniqueIdentifier
 }
 
-func (u *BCABankTrxData) Date() string {
-	return u.BCADate
+func (u *BNIBankTrxData) Date() string {
+	return u.BNIDate
 }
 
-func (u *BCABankTrxData) Amount() float64 {
-	return math.Abs(u.BCAAmount)
+func (u *BNIBankTrxData) Amount() float64 {
+	return math.Abs(u.BNIAmount)
 }
 
-func (u *BCABankTrxData) Type() TrxType {
-	if u.BCAAmount <= 0 {
+func (u *BNIBankTrxData) Type() TrxType {
+	if u.BNIAmount <= 0 {
 		return DEBIT
 	}
 
 	return CREDIT
 }
 
-type BCABank struct {
+type BNIBank struct {
 	csvReader *csv.Reader
-	parser    Parser
+	parser    BankParser
 	bank      string
 }
 
-var _ ReconcileData = (*BCABank)(nil)
+var _ ReconcileBankData = (*BNIBank)(nil)
 
-func NewBCABank(
+func NewBNIBank(
 	bank string,
 	csvReader *csv.Reader,
-) (*BCABank, error) {
-	return &BCABank{
-		parser:    BCA,
+) (*BNIBank, error) {
+	return &BNIBank{
+		parser:    BNI,
 		bank:      bank,
 		csvReader: csvReader,
 	}, nil
 }
 
-func (d *BCABank) GetParser() Parser {
+func (d *BNIBank) GetParser() BankParser {
 	return d.parser
 }
 
-func (d *BCABank) GetBank() string {
+func (d *BNIBank) GetBank() string {
 	return d.bank
 }
 
-func (d *BCABank) ToBankTrxData(ctx context.Context, isHaveHeader bool) (returnData []*BankTrxData, err error) {
+func (d *BNIBank) ToBankTrxData(ctx context.Context, isHaveHeader bool) (returnData []*BankTrxData, err error) {
 	var dec *csvutil.Decoder
 	if isHaveHeader {
 		dec, err = csvutil.NewDecoder(d.csvReader)
@@ -77,7 +77,7 @@ func (d *BCABank) ToBankTrxData(ctx context.Context, isHaveHeader bool) (returnD
 			return nil, err
 		}
 	} else {
-		header, er := csvutil.Header(BCABankTrxData{}, "csv")
+		header, er := csvutil.Header(BNIBankTrxData{}, "csv")
 		if er != nil {
 			log.AddErr(ctx, er)
 			return nil, er
@@ -91,7 +91,7 @@ func (d *BCABank) ToBankTrxData(ctx context.Context, isHaveHeader bool) (returnD
 	}
 
 	for {
-		originalData := &BCABankTrxData{}
+		originalData := &BNIBankTrxData{}
 		bankTrxData := &BankTrxData{}
 		if err := dec.Decode(originalData); err == io.EOF {
 			break
@@ -106,13 +106,14 @@ func (d *BCABank) ToBankTrxData(ctx context.Context, isHaveHeader bool) (returnD
 			return nil, err
 		}
 
+		bankTrxData.Bank = d.bank
 		returnData = append(returnData, bankTrxData)
 	}
 
 	return
 }
 
-func (d *BCABank) ToSql(ctx context.Context, isHaveHeader bool) (returnData string, err error) {
+func (d *BNIBank) ToSql(ctx context.Context, isHaveHeader bool) (returnData string, err error) {
 	data, err := d.ToBankTrxData(ctx, isHaveHeader)
 	if err != nil {
 		log.AddErr(ctx, err)

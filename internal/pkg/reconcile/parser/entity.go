@@ -4,7 +4,15 @@ type BankTrxData struct {
 	UniqueIdentifier string
 	Date             string
 	Type             TrxType
+	Bank             string
 	Amount           float64
+}
+
+type SystemTrxData struct {
+	TrxID           string
+	TransactionTime string
+	Type            TrxType
+	Amount          float64
 }
 
 type TrxType string
@@ -14,10 +22,16 @@ const (
 	CREDIT TrxType = "CREDIT"
 )
 
-type Parser string
+type BankParser string
 
 const (
-	DEFAULT Parser = "DEFAULT"
-	BCA     Parser = "BCA"
-	BNI     Parser = "BNI"
+	DEFAULT_BANK BankParser = "DEFAULT"
+	BCA          BankParser = "BCA"
+	BNI          BankParser = "BNI"
+)
+
+type SystemParser string
+
+const (
+	DEFAULT_SYSTEM SystemParser = "DEFAULT"
 )

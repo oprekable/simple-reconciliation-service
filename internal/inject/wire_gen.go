@@ -18,11 +18,12 @@ import (
 	"simple-reconciliation-service/internal/app/err/core"
 	"simple-reconciliation-service/internal/app/handler/hcli"
 	"simple-reconciliation-service/internal/app/repository"
+	"simple-reconciliation-service/internal/app/repository/process"
 	"simple-reconciliation-service/internal/app/repository/sample"
 	"simple-reconciliation-service/internal/app/server"
 	"simple-reconciliation-service/internal/app/server/cli"
 	"simple-reconciliation-service/internal/app/service"
-	"simple-reconciliation-service/internal/app/service/process"
+	process2 "simple-reconciliation-service/internal/app/service/process"
 	sample2 "simple-reconciliation-service/internal/app/service/sample"
 )
 
@@ -46,9 +47,13 @@ func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz
 	if err != nil {
 		return nil, nil, err
 	}
-	repositories := repository.NewRepositories(db)
+	processDB, err := process.ProviderDB(components)
+	if err != nil {
+		return nil, nil, err
+	}
+	repositories := repository.NewRepositories(db, processDB)
 	svc := sample2.ProviderSvc(components, repositories)
-	processSvc := process.ProviderSvc(components, repositories)
+	processSvc := process2.ProviderSvc(components, repositories)
 	services := service.NewServices(svc, processSvc)
 	v := hcli.ProviderHandlers()
 	cliCli, err := cli.NewCli(components, services, repositories, v)

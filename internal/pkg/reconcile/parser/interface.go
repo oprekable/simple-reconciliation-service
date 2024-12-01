@@ -2,9 +2,14 @@ package parser
 
 import "context"
 
-type ReconcileData interface {
+type ReconcileBankData interface {
 	GetBank() string
-	GetParser() Parser
+	GetParser() BankParser
 	ToBankTrxData(ctx context.Context, isHaveHeader bool) (returnData []*BankTrxData, err error)
 	ToSql(ctx context.Context, isHaveHeader bool) (returnData string, err error)
+}
+
+type ReconcileSystemData interface {
+	GetParser() SystemParser
+	ToSystemTrxData(ctx context.Context, isHaveHeader bool) (returnData []*SystemTrxData, err error)
 }

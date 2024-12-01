@@ -16,9 +16,9 @@ import (
 )
 
 type DefaultBankTrxData struct {
-	DefaultUniqueIdentifier string  `csv:"uniqueIdentifier"`
-	DefaultDate             string  `csv:"date"`
-	DefaultAmount           float64 `csv:"amount"`
+	DefaultUniqueIdentifier string  `csv:"UniqueIdentifier"`
+	DefaultDate             string  `csv:"Date"`
+	DefaultAmount           float64 `csv:"Amount"`
 }
 
 func (u *DefaultBankTrxData) UniqueIdentifier() string {
@@ -43,24 +43,24 @@ func (u *DefaultBankTrxData) Type() TrxType {
 
 type DefaultBank struct {
 	csvReader *csv.Reader
-	parser    Parser
+	parser    BankParser
 	bank      string
 }
 
-var _ ReconcileData = (*DefaultBank)(nil)
+var _ ReconcileBankData = (*DefaultBank)(nil)
 
 func NewDefaultBank(
 	bank string,
 	csvReader *csv.Reader,
 ) (*DefaultBank, error) {
 	return &DefaultBank{
-		parser:    DEFAULT,
+		parser:    DEFAULT_BANK,
 		bank:      bank,
 		csvReader: csvReader,
 	}, nil
 }
 
-func (d *DefaultBank) GetParser() Parser {
+func (d *DefaultBank) GetParser() BankParser {
 	return d.parser
 }
 
@@ -106,6 +106,7 @@ func (d *DefaultBank) ToBankTrxData(ctx context.Context, isHaveHeader bool) (ret
 			return nil, err
 		}
 
+		bankTrxData.Bank = d.bank
 		returnData = append(returnData, bankTrxData)
 	}
 
