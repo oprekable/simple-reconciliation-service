@@ -1,6 +1,12 @@
 package root
 
-import "embed"
+import (
+	"embed"
+	"fmt"
+	"path/filepath"
+	"simple-reconciliation-service/internal/pkg/utils/filepathhelper"
+	"time"
+)
 
 const (
 	FlagSystemTRXPath                        string = "systemtrxpath"
@@ -33,8 +39,13 @@ const (
 )
 
 var EmbedFS *embed.FS
-var SampleUsageFlags = "--systemtrxpath=/tmp/system --banktrxpath=/tmp/bank --reportpath=/tmp/report --listbank=bca,mandiri,bri,danamon"
-var ProcessUsageFlags = "--systemtrxpath=/tmp/system --banktrxpath=/tmp/bank --reportpath=/tmp/report --listbank=bca,mandiri,bri,danamon --from=2024-11-20 --from=2024-11-21"
+var nowDateString = time.Now().Format("2006-01-02")
+var workDir = filepathhelper.GetWorkDir()
+var pathSystemTrx = filepath.Join(workDir, "sample", "system")
+var pathBankTrx = filepath.Join(workDir, "sample", "bank")
+var pathReportTrx = filepath.Join(workDir, "sample", "report")
+var SampleUsageFlags = fmt.Sprintf("--systemtrxpath=%s --banktrxpath=%s --listbank=bca,bni,mandiri,bri,danamon --percentagematch=100 --amountdata=10000 --from=%s --to=%s", pathSystemTrx, pathBankTrx, nowDateString, nowDateString)
+var ProcessUsageFlags = fmt.Sprintf("--systemtrxpath=%s --banktrxpath=%s --reportpath=%s --listbank=bca,bni,mandiri,bri,danamon --from=%s --to=%s", pathSystemTrx, pathBankTrx, pathReportTrx, nowDateString, nowDateString)
 var FlagSystemTRXPathValue string
 var FlagBankTRXPathValue string
 var FlagReportTRXPathValue string
@@ -42,7 +53,7 @@ var FlagListBankValue []string
 var FlagTZValue string
 var FlagFromDateValue string
 var FlagToDateValue string
-var DefaultListBank = []string{"bca", "mandiri", "bri", "danamon"}
+var DefaultListBank = []string{"bca", "bni", "mandiri", "bri", "danamon"}
 var FlagTotalDataSampleToGenerateValue int64
 var DefaultTotalDataSampleToGenerate int64 = 1000
 var FlagPercentageMatchSampleToGenerateValue int

@@ -32,7 +32,7 @@ SELECT
 CREATE TEMPORARY TABLE IF NOT EXISTS banks AS
 SELECT
     key AS id
-    , value AS bank_name
+    , LOWER(value) AS bank_name
 FROM json_each(
     ?
 )
@@ -41,13 +41,15 @@ FROM json_each(
 	QueryCreateTableBaseData = `
 -- QueryCreateTableBaseData
 CREATE TEMPORARY TABLE IF NOT EXISTS base_data AS
-WITH RECURSIVE generate_series(value) AS (
+WITH RECURSIVE generate_series(value, randomData) AS (
     SELECT
         start AS v
+		, RANDOM() AS randomData
     FROM arguments
     UNION ALL
     SELECT
         DATETIME(value , '+1 second') AS v
+		, RANDOM() AS randomData
     FROM generate_series
     WHERE
         DATETIME(value , '+1 second') <= (SELECT DATETIME(DATETIME(end, '+1 day'), '-1 second') FROM arguments)
@@ -56,8 +58,10 @@ data AS (
     SELECT
         value AS transactionTime
         , lower(hex(randomblob(16))) AS trxID
-        , RANDOM() AS randomData
+        , randomData
     FROM generate_series
+	ORDER BY random()
+	LIMIT (SELECT limit_trx_data * 2 FROM arguments)
 )
 SELECT
     trxID

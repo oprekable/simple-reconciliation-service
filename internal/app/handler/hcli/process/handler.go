@@ -2,9 +2,14 @@ package process
 
 import (
 	"fmt"
+	"os"
+	"simple-reconciliation-service/cmd/root"
 	"simple-reconciliation-service/internal/app/component"
 	"simple-reconciliation-service/internal/app/repository"
 	"simple-reconciliation-service/internal/app/service"
+	"strings"
+
+	"github.com/olekukonko/tablewriter"
 )
 
 const name = "process"
@@ -23,11 +28,43 @@ func (h *Handler) Exec() error {
 	if h.comp == nil || h.svc == nil || h.repo == nil {
 		return nil
 	}
-	fmt.Println(name)
-	fmt.Println(h.comp.Config.Reconciliation.BankTRXPath)
-	fmt.Println(h.comp.Config.Reconciliation.SystemTRXPath)
-	fmt.Println(h.comp.Config.Reconciliation.ReportTRXPath)
-	fmt.Println(h.comp.Config.Reconciliation.ListBank)
+
+	args := [][]string{
+		{
+			fmt.Sprintf("-%s --%s", root.FlagFromDateShort, root.FlagFromDate),
+			root.FlagFromDateValue,
+		},
+		{
+			fmt.Sprintf("-%s --%s", root.FlagToDateShort, root.FlagToDate),
+			root.FlagToDateValue,
+		},
+		{
+			fmt.Sprintf("-%s --%s", root.FlagSystemTRXPathShort, root.FlagSystemTRXPath),
+			root.FlagSystemTRXPathValue,
+		},
+		{
+			fmt.Sprintf("-%s --%s", root.FlagBankTRXPathShort, root.FlagBankTRXPath),
+			root.FlagBankTRXPathValue,
+		},
+		{
+			fmt.Sprintf("-%s --%s", root.FlagReportTRXPathShort, root.FlagReportTRXPath),
+			root.FlagReportTRXPathValue,
+		},
+		{
+			fmt.Sprintf("-%s --%s", root.FlagListBankShort, root.FlagListBank),
+			strings.Join(root.FlagListBankValue, ","),
+		},
+	}
+
+	fmt.Println("")
+	tableArgs := tablewriter.NewWriter(os.Stdout)
+	tableArgs.SetHeader([]string{"Config", "Value"})
+	tableArgs.SetBorder(false)
+	tableArgs.SetAlignment(tablewriter.ALIGN_LEFT)
+	tableArgs.AppendBulk(args)
+	tableArgs.Render()
+	fmt.Println("")
+
 	return nil
 }
 

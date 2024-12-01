@@ -196,11 +196,10 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 		err = tx.Commit()
 	}
 
-	log.AddStrOrAddErr(
+	log.AddErr(ctx, err)
+	log.Msg(
 		ctx,
-		err,
-		"[failed] Exec Pre method from db",
-		"[success] Exec Pre method from db",
+		"[sample.NewDB] Exec Pre method from db",
 	)
 
 	return
@@ -231,11 +230,10 @@ func (d *DB) GetTrx(ctx context.Context) (returnData []TrxData, err error) {
 		},
 	)
 
-	log.AddStrOrAddErr(
+	log.AddErr(ctx, err)
+	log.Msg(
 		ctx,
-		err,
-		"[failed] Exec GetData method from db",
-		"[success] Exec GetData method from db",
+		"[sample.NewDB] Exec GetData method from db",
 	)
 
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -316,12 +314,15 @@ func (d *DB) Post(ctx context.Context) (err error) {
 		err = tx.Commit()
 	}
 
-	log.AddStrOrAddErr(
+	log.AddErr(ctx, err)
+	log.Msg(
 		ctx,
-		err,
-		"[failed] Exec Post method from db",
-		"[success] Exec Post method from db",
+		"[sample.NewDB] Exec Post method from db",
 	)
 
 	return
+}
+
+func (d *DB) Close() (err error) {
+	return d.db.Close()
 }

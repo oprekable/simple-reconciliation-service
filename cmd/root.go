@@ -3,6 +3,7 @@ package cmd
 import (
 	"embed"
 	"fmt"
+	"path/filepath"
 	"simple-reconciliation-service/cmd/root"
 	"simple-reconciliation-service/internal/pkg/utils/filepathhelper"
 	"simple-reconciliation-service/variable"
@@ -43,7 +44,7 @@ func init() {
 		&root.FlagSystemTRXPathValue,
 		root.FlagSystemTRXPath,
 		root.FlagSystemTRXPathShort,
-		fmt.Sprintf("%s/sample/system", workDir),
+		filepath.Join(workDir, "sample", "system"),
 		root.FlagSystemTRXPathUsage,
 	)
 
@@ -51,7 +52,7 @@ func init() {
 		&root.FlagBankTRXPathValue,
 		root.FlagBankTRXPath,
 		root.FlagBankTRXPathShort,
-		fmt.Sprintf("%s/sample/bank", workDir),
+		filepath.Join(workDir, "sample", "bank"),
 		root.FlagBankTRXPathUsage,
 	)
 
@@ -59,7 +60,7 @@ func init() {
 		&root.FlagReportTRXPathValue,
 		root.FlagReportTRXPath,
 		root.FlagReportTRXPathShort,
-		fmt.Sprintf("%s/sample/report", workDir),
+		filepath.Join(workDir, "sample", "report"),
 		root.FlagReportTRXPathUsage,
 	)
 

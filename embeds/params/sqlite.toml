@@ -10,4 +10,5 @@ cache = "shared"
 [sqlite.read]
 is_enabled = true
 db_path = ":memory:"
+#db_path = "/Users/ekofedriyanto/Codes/simple-reconciliation-service/a.db"
 cache = "shared"
