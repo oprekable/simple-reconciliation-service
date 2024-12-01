@@ -54,7 +54,7 @@ func NewBNIBank(
 	csvReader *csv.Reader,
 ) (*BNIBank, error) {
 	return &BNIBank{
-		parser:    BNI,
+		parser:    BNIBankParser,
 		bank:      bank,
 		csvReader: csvReader,
 	}, nil

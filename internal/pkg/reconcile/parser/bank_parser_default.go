@@ -54,7 +54,7 @@ func NewDefaultBank(
 	csvReader *csv.Reader,
 ) (*DefaultBank, error) {
 	return &DefaultBank{
-		parser:    DEFAULT_BANK,
+		parser:    DefaultBankParser,
 		bank:      bank,
 		csvReader: csvReader,
 	}, nil

@@ -83,22 +83,6 @@ func AddErr(ctx context.Context, er error) {
 	})
 }
 
-func AddStrOrAddErr(ctx context.Context, er error, strError string, strInfo string) {
-	if er != nil {
-		zerolog.Ctx(ctx).UpdateContext(func(c zerolog.Context) zerolog.Context {
-			return c.Object(strconv.FormatInt(time.Now().UnixNano(), 10), New()).
-				AnErr(strconv.FormatInt(time.Now().UnixNano(), 10), er).
-				Str(strconv.FormatInt(time.Now().UnixNano(), 10), strError)
-		})
-
-		return
-	}
-
-	zerolog.Ctx(ctx).UpdateContext(func(c zerolog.Context) zerolog.Context {
-		return c.Str(strconv.FormatInt(time.Now().UnixNano(), 10), strInfo)
-	})
-}
-
 func Msg(ctx context.Context, msg string) {
 	zerolog.Ctx(ctx).
 		Info().

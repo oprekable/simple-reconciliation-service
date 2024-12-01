@@ -138,14 +138,14 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs) (returnS
 					}
 
 					switch bank {
-					case string(parser.BCA):
+					case string(parser.BCABankParser):
 						{
 							bankParser, err = parser.NewBCABank(
 								bank,
 								csv.NewReader(f),
 							)
 						}
-					case string(parser.BNI):
+					case string(parser.BNIBankParser):
 						{
 							bankParser, err = parser.NewBNIBank(
 								bank,

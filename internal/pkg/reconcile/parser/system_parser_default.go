@@ -50,7 +50,7 @@ func NewDefaultSystem(
 	csvReader *csv.Reader,
 ) (*DefaultSystem, error) {
 	return &DefaultSystem{
-		parser:    DEFAULT_SYSTEM,
+		parser:    DefaultSystemParser,
 		csvReader: csvReader,
 	}, nil
 }

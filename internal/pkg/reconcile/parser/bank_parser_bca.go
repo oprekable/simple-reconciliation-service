@@ -54,7 +54,7 @@ func NewBCABank(
 	csvReader *csv.Reader,
 ) (*BCABank, error) {
 	return &BCABank{
-		parser:    BCA,
+		parser:    BCABankParser,
 		bank:      bank,
 		csvReader: csvReader,
 	}, nil

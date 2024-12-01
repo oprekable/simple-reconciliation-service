@@ -25,13 +25,13 @@ const (
 type BankParser string
 
 const (
-	DEFAULT_BANK BankParser = "DEFAULT"
-	BCA          BankParser = "BCA"
-	BNI          BankParser = "BNI"
+	DefaultBankParser BankParser = "DEFAULT"
+	BCABankParser     BankParser = "BCA"
+	BNIBankParser     BankParser = "BNI"
 )
 
 type SystemParser string
 
 const (
-	DEFAULT_SYSTEM SystemParser = "DEFAULT"
+	DefaultSystemParser SystemParser = "DEFAULT"
 )
