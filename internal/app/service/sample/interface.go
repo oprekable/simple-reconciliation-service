@@ -7,5 +7,5 @@ import (
 )
 
 type Service interface {
-	GenerateReport(ctx context.Context, fs afero.Fs) (returnSummary Summary, err error)
+	GenerateSample(ctx context.Context, fs afero.Fs) (returnSummary Summary, err error)
 }

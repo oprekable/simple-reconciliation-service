@@ -32,7 +32,7 @@ func (h *Handler) Exec() (err error) {
 	if h.comp == nil || h.svc == nil || h.repo == nil {
 		return nil
 	}
-	summary, err := h.svc.SvcSample.GenerateReport(context.Background(), afero.NewOsFs())
+	summary, err := h.svc.SvcSample.GenerateSample(context.Background(), afero.NewOsFs())
 	if err != nil {
 		return err
 	}

@@ -36,7 +36,7 @@ func NewSvc(
 	}
 }
 
-func (s *Svc) GenerateReport(ctx context.Context, fs afero.Fs) (returnSummary Summary, err error) {
+func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs) (returnSummary Summary, err error) {
 	ctx = s.comp.Logger.GetLogger().With().Str("component", "Sample Service").Ctx(ctx).Logger().WithContext(s.comp.Logger.GetCtx())
 
 	var trxData []sample.TrxData
@@ -105,7 +105,7 @@ func (s *Svc) GenerateReport(ctx context.Context, fs afero.Fs) (returnSummary Su
 					}
 
 					multiplier := float64(1)
-					if data.Type == "DEBIT" {
+					if data.Type == DEBIT {
 						multiplier = float64(-1)
 					}
 
@@ -174,90 +174,14 @@ func (s *Svc) GenerateReport(ctx context.Context, fs afero.Fs) (returnSummary Su
 
 			for bankName, trxData := range bankTrxData {
 				returnSummary.FileBankTrx[bankName] = fmt.Sprintf("%s/%s/%s_%s.csv", s.comp.Config.Reconciliation.BankTRXPath, bankName, bankName, fileNameSuffix)
+				totalBankTrx, exec := s.appendExecutor(
+					fs,
+					returnSummary.FileBankTrx[bankName],
+					trxData,
+				)
 
-				switch strings.ToUpper(bankName) {
-				case "BCA":
-					{
-						bd := make([]BCABankTrxData, 0, len(trxData))
-						lo.ForEach(trxData, func(data interface{}, _ int) {
-							bd = append(bd, data.(BCABankTrxData))
-						})
-
-						returnSummary.TotalBankTrx[bankName] = int64(len(bd))
-
-						executor = append(
-							executor,
-							func(ct context.Context) (interface{}, error) {
-								er := csvhelper.StructToCSVFile(
-									ct,
-									fs,
-									returnSummary.FileBankTrx[bankName],
-									bd,
-									true,
-								)
-
-								log.AddErr(ct, er)
-								log.Msg(c, "[sample.NewSvc] save csv file "+returnSummary.FileBankTrx[bankName]+" executed")
-
-								return nil, er
-							},
-						)
-					}
-				case "BNI":
-					{
-						bd := make([]BNIBankTrxData, 0, len(trxData))
-						lo.ForEach(trxData, func(data interface{}, _ int) {
-							bd = append(bd, data.(BNIBankTrxData))
-						})
-
-						returnSummary.TotalBankTrx[bankName] = int64(len(bd))
-
-						executor = append(
-							executor,
-							func(ct context.Context) (interface{}, error) {
-								er := csvhelper.StructToCSVFile(
-									ct,
-									fs,
-									returnSummary.FileBankTrx[bankName],
-									bd,
-									true,
-								)
-
-								log.AddErr(ct, er)
-								log.Msg(c, "[sample.NewSvc] save csv file "+returnSummary.FileBankTrx[bankName]+" executed")
-
-								return nil, er
-							},
-						)
-					}
-				default:
-					{
-						bd := make([]DefaultBankTrxData, 0, len(trxData))
-						lo.ForEach(trxData, func(data interface{}, _ int) {
-							bd = append(bd, data.(DefaultBankTrxData))
-						})
-
-						returnSummary.TotalBankTrx[bankName] = int64(len(bd))
-
-						executor = append(
-							executor,
-							func(ct context.Context) (interface{}, error) {
-								er := csvhelper.StructToCSVFile(
-									ct,
-									fs,
-									returnSummary.FileBankTrx[bankName],
-									bd,
-									true,
-								)
-
-								log.AddErr(ct, er)
-								log.Msg(c, "[sample.NewSvc] save csv file "+returnSummary.FileBankTrx[bankName]+" executed")
-
-								return nil, er
-							},
-						)
-					}
-				}
+				returnSummary.TotalBankTrx[bankName] = totalBankTrx
+				executor = append(executor, exec)
 			}
 
 			return hunch.All(
@@ -266,6 +190,81 @@ func (s *Svc) GenerateReport(ctx context.Context, fs afero.Fs) (returnSummary Su
 			)
 		},
 	)
+
+	return
+}
+
+func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice interface{}) (totalData int64, executor hunch.Executable) {
+	switch value := trxDataSlice.(type) {
+	case []interface{}:
+		{
+			switch value[0].(type) {
+			case BCABankTrxData:
+				{
+					bd := make([]BCABankTrxData, 0, len(value))
+					lo.ForEach(trxDataSlice.([]interface{}), func(data interface{}, _ int) {
+						bd = append(bd, data.(BCABankTrxData))
+					})
+					totalData = int64(len(bd))
+					executor = func(ct context.Context) (interface{}, error) {
+						er := csvhelper.StructToCSVFile(
+							ct,
+							fs,
+							filePath,
+							bd,
+							true,
+						)
+
+						log.AddErr(ct, er)
+						log.Msg(ct, "[sample.NewSvc] save csv file "+filePath+" executed")
+						return nil, er
+					}
+				}
+			case BNIBankTrxData:
+				{
+					bd := make([]BNIBankTrxData, 0, len(value))
+					lo.ForEach(trxDataSlice.([]interface{}), func(data interface{}, _ int) {
+						bd = append(bd, data.(BNIBankTrxData))
+					})
+					totalData = int64(len(bd))
+					executor = func(ct context.Context) (interface{}, error) {
+						er := csvhelper.StructToCSVFile(
+							ct,
+							fs,
+							filePath,
+							bd,
+							true,
+						)
+
+						log.AddErr(ct, er)
+						log.Msg(ct, "[sample.NewSvc] save csv file "+filePath+" executed")
+						return nil, er
+					}
+				}
+			default:
+				{
+					bd := make([]DefaultBankTrxData, 0, len(value))
+					lo.ForEach(trxDataSlice.([]interface{}), func(data interface{}, _ int) {
+						bd = append(bd, data.(DefaultBankTrxData))
+					})
+					totalData = int64(len(bd))
+					executor = func(ct context.Context) (interface{}, error) {
+						er := csvhelper.StructToCSVFile(
+							ct,
+							fs,
+							filePath,
+							bd,
+							true,
+						)
+
+						log.AddErr(ct, er)
+						log.Msg(ct, "[sample.NewSvc] save csv file "+filePath+" executed")
+						return nil, er
+					}
+				}
+			}
+		}
+	}
 
 	return
 }
