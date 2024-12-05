@@ -5,6 +5,7 @@ type BankTrxData struct {
 	Date             string
 	Type             TrxType
 	Bank             string
+	FilePath         string
 	Amount           float64
 }
 
@@ -12,6 +13,7 @@ type SystemTrxData struct {
 	TrxID           string
 	TransactionTime string
 	Type            TrxType
+	FilePath        string
 	Amount          float64
 }
 

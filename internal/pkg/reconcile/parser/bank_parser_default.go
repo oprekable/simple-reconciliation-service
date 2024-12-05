@@ -43,9 +43,10 @@ func (u *DefaultBankTrxData) Type() TrxType {
 }
 
 type DefaultBank struct {
-	csvReader *csv.Reader
-	parser    BankParser
-	bank      string
+	csvReader    *csv.Reader
+	parser       BankParser
+	bank         string
+	isHaveHeader bool
 }
 
 var _ ReconcileBankData = (*DefaultBank)(nil)
@@ -53,11 +54,13 @@ var _ ReconcileBankData = (*DefaultBank)(nil)
 func NewDefaultBank(
 	bank string,
 	csvReader *csv.Reader,
+	isHaveHeader bool,
 ) (*DefaultBank, error) {
 	return &DefaultBank{
-		parser:    DefaultBankParser,
-		bank:      bank,
-		csvReader: csvReader,
+		parser:       DefaultBankParser,
+		bank:         bank,
+		csvReader:    csvReader,
+		isHaveHeader: isHaveHeader,
 	}, nil
 }
 
@@ -69,9 +72,9 @@ func (d *DefaultBank) GetBank() string {
 	return d.bank
 }
 
-func (d *DefaultBank) ToBankTrxData(ctx context.Context, isHaveHeader bool) (returnData []*BankTrxData, err error) {
+func (d *DefaultBank) ToBankTrxData(ctx context.Context, filePath string) (returnData []*BankTrxData, err error) {
 	var dec *csvutil.Decoder
-	if isHaveHeader {
+	if d.isHaveHeader {
 		dec, err = csvutil.NewDecoder(d.csvReader)
 		if err != nil || dec == nil {
 			log.AddErr(ctx, err)
@@ -108,14 +111,15 @@ func (d *DefaultBank) ToBankTrxData(ctx context.Context, isHaveHeader bool) (ret
 		}
 
 		bankTrxData.Bank = d.bank
+		bankTrxData.FilePath = filePath
 		returnData = append(returnData, bankTrxData)
 	}
 
 	return
 }
 
-func (d *DefaultBank) ToSql(ctx context.Context, isHaveHeader bool, sqlPattern string) (returnData string, err error) {
-	data, err := d.ToBankTrxData(ctx, isHaveHeader)
+func (d *DefaultBank) ToSql(ctx context.Context, filePath string, sqlPattern string) (returnData string, err error) {
+	data, err := d.ToBankTrxData(ctx, filePath)
 	if err != nil {
 		log.AddErr(ctx, err)
 		return returnData, err
@@ -132,6 +136,7 @@ func (d *DefaultBank) ToSql(ctx context.Context, isHaveHeader bool, sqlPattern s
 				d.Bank,
 				d.Type,
 				d.Amount,
+				d.FilePath,
 			),
 		)
 	})

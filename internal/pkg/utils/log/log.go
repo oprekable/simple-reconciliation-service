@@ -91,9 +91,16 @@ func Msg(ctx context.Context, msg string) {
 }
 
 func Err(ctx context.Context, msg string, er error) {
-	zerolog.Ctx(ctx).
-		Err(er).
-		Ctx(ctx).
-		Caller(2).
-		Msg(msg)
+	if er == nil {
+		zerolog.Ctx(ctx).
+			Info().
+			Ctx(ctx).
+			Msg(msg)
+	} else {
+		zerolog.Ctx(ctx).
+			Err(er).
+			Ctx(ctx).
+			Caller(2).
+			Msg(msg)
+	}
 }

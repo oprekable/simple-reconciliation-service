@@ -40,18 +40,21 @@ func (u *DefaultSystemTrxData) Type() TrxType {
 }
 
 type DefaultSystem struct {
-	csvReader *csv.Reader
-	parser    SystemParser
+	csvReader    *csv.Reader
+	parser       SystemParser
+	isHaveHeader bool
 }
 
 var _ ReconcileSystemData = (*DefaultSystem)(nil)
 
 func NewDefaultSystem(
 	csvReader *csv.Reader,
+	isHaveHeader bool,
 ) (*DefaultSystem, error) {
 	return &DefaultSystem{
-		parser:    DefaultSystemParser,
-		csvReader: csvReader,
+		parser:       DefaultSystemParser,
+		csvReader:    csvReader,
+		isHaveHeader: isHaveHeader,
 	}, nil
 }
 
@@ -59,9 +62,9 @@ func (d *DefaultSystem) GetParser() SystemParser {
 	return d.parser
 }
 
-func (d *DefaultSystem) ToSystemTrxData(ctx context.Context, isHaveHeader bool) (returnData []*SystemTrxData, err error) {
+func (d *DefaultSystem) ToSystemTrxData(ctx context.Context, filePath string) (returnData []*SystemTrxData, err error) {
 	var dec *csvutil.Decoder
-	if isHaveHeader {
+	if d.isHaveHeader {
 		dec, err = csvutil.NewDecoder(d.csvReader)
 		if err != nil || dec == nil {
 			log.AddErr(ctx, err)
@@ -97,14 +100,15 @@ func (d *DefaultSystem) ToSystemTrxData(ctx context.Context, isHaveHeader bool) 
 			return nil, err
 		}
 
+		systemTrxData.FilePath = filePath
 		returnData = append(returnData, systemTrxData)
 	}
 
 	return
 }
 
-func (d *DefaultSystem) ToSql(ctx context.Context, isHaveHeader bool, sqlPattern string) (returnData string, err error) {
-	data, err := d.ToSystemTrxData(ctx, isHaveHeader)
+func (d *DefaultSystem) ToSql(ctx context.Context, filePath string, sqlPattern string) (returnData string, err error) {
+	data, err := d.ToSystemTrxData(ctx, filePath)
 	if err != nil {
 		log.AddErr(ctx, err)
 		return returnData, err
@@ -120,6 +124,7 @@ func (d *DefaultSystem) ToSql(ctx context.Context, isHaveHeader bool, sqlPattern
 				d.TransactionTime,
 				d.Type,
 				d.Amount,
+				d.FilePath,
 			),
 		)
 	})
