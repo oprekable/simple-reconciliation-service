@@ -9,11 +9,9 @@ import (
 	"math"
 	"simple-reconciliation-service/internal/pkg/utils/log"
 
-	"github.com/samber/lo"
-
-	"github.com/ulule/deepcopier"
-
 	"github.com/jszwec/csvutil"
+	"github.com/samber/lo"
+	"github.com/ulule/deepcopier"
 )
 
 type DefaultBankTrxData struct {

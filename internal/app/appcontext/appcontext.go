@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"errors"
+	"fmt"
 	"os"
 	"simple-reconciliation-service/internal/app/component"
 	"simple-reconciliation-service/internal/app/repository"
@@ -107,6 +108,14 @@ func (a *AppContext) Start() {
 	a.eg.Go(func() error {
 		log.Msg(a.GetCtx(), "[start] application")
 		return shutdown.TermSignalTrap().Wait(a.ctx, func() {
+			defer func() {
+				if r := recover(); r != nil {
+					errRecovery := fmt.Errorf("recovered from panic: %s", r)
+					log.AddErr(context.Background(), errRecovery)
+					return
+				}
+			}()
+
 			atexit.AtExit()
 
 			if context.Cause(a.ctx).Error() == "done" {

@@ -25,11 +25,11 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 	return
 }
 
-func (d *DB) ImportSystemTrx(ctx context.Context, systemParser parser.ReconcileSystemData) (err error) {
+func (d *DB) ImportSystemTrx(ctx context.Context, data []*parser.SystemTrxData) (err error) {
 	return
 }
 
-func (d *DB) ImportBankTrx(ctx context.Context, bank string, bankParser parser.ReconcileBankData, numWorkers int) (err error) {
+func (d *DB) ImportBankTrx(ctx context.Context, data []*parser.BankTrxData) (err error) {
 	// TODO: import data to DB
 	return
 }

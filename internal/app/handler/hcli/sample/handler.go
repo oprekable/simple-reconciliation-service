@@ -11,8 +11,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/k0kubun/go-ansi"
 	"github.com/olekukonko/tablewriter"
-
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/afero"
 )
 
@@ -32,10 +33,18 @@ func (h *Handler) Exec() (err error) {
 	if h.comp == nil || h.svc == nil || h.repo == nil {
 		return nil
 	}
-	summary, err := h.svc.SvcSample.GenerateSample(context.Background(), afero.NewOsFs())
-	if err != nil {
-		return err
-	}
+	bar := progressbar.NewOptions(-1,
+		progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
+		progressbar.OptionEnableColorCodes(true),
+		progressbar.OptionSetWidth(15),
+		progressbar.OptionSpinnerType(17),
+		progressbar.OptionSetTheme(progressbar.Theme{
+			Saucer:        "[green]=[reset]",
+			SaucerHead:    "[green]>[reset]",
+			SaucerPadding: " ",
+			BarStart:      "[",
+			BarEnd:        "]",
+		}))
 
 	args := [][]string{
 		{
@@ -80,6 +89,11 @@ func (h *Handler) Exec() (err error) {
 	tableArgs.AppendBulk(args)
 	tableArgs.Render()
 
+	summary, err := h.svc.SvcSample.GenerateSample(context.Background(), afero.NewOsFs(), bar, h.comp.Config.Reconciliation.IsDeleteCurrentSampleDirectory)
+	if err != nil {
+		return err
+	}
+
 	data := [][]string{
 		{"System Trx", "-", "Total Trx", strconv.FormatInt(summary.TotalSystemTrx, 10)}, //nolint:gofmt
 		{"System Trx", "-", "File Path", summary.FileSystemTrx},
@@ -102,6 +116,8 @@ func (h *Handler) Exec() (err error) {
 	table.AppendBulk(data)
 	table.Render()
 	fmt.Println("")
+
+	bar.Describe("[cyan]Done")
 
 	return
 }

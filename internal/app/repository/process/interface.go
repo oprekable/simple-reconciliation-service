@@ -14,8 +14,8 @@ type Repository interface {
 		toDate time.Time,
 	) (err error)
 
-	ImportSystemTrx(ctx context.Context, systemParser parser.ReconcileSystemData) (err error)
-	ImportBankTrx(ctx context.Context, bank string, bankParser parser.ReconcileBankData, numWorkers int) (err error)
+	ImportSystemTrx(ctx context.Context, data []*parser.SystemTrxData) (err error)
+	ImportBankTrx(ctx context.Context, data []*parser.BankTrxData) (err error)
 	GetReconciliation(ctx context.Context) (returnData []ReconciliationData, err error)
 	Post(ctx context.Context) (err error)
 	Close() (err error)

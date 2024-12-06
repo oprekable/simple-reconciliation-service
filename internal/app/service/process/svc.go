@@ -14,10 +14,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/samber/lo/parallel"
-
 	"github.com/aaronjan/hunch"
-
+	"github.com/samber/lo/parallel"
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/afero"
 )
 
@@ -93,7 +92,7 @@ func (s *Svc) parseSystemTrxFiles(ctx context.Context, afs afero.Fs) (returnData
 }
 
 func (s *Svc) importReconcileSystemDataToDB(ctx context.Context, data []*parser.SystemTrxData) (err error) {
-	return
+	return s.repo.RepoProcess.ImportSystemTrx(ctx, data)
 }
 
 func (s *Svc) parseBankTrxFiles(ctx context.Context, afs afero.Fs) (returnData []*parser.BankTrxData, err error) {
@@ -194,57 +193,92 @@ func (s *Svc) parseBankTrxFiles(ctx context.Context, afs afero.Fs) (returnData [
 }
 
 func (s *Svc) importReconcileBankDataToDB(ctx context.Context, data []*parser.BankTrxData) (err error) {
-	return
+	return s.repo.RepoProcess.ImportBankTrx(ctx, data)
 }
 
 func (s *Svc) generateReconciliationSummaryAndFiles(ctx context.Context, data []process.ReconciliationData) (returnData ReconciliationSummary, err error) {
 	return
 }
 
-func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs) (returnData ReconciliationSummary, err error) {
+func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs, bar *progressbar.ProgressBar) (returnData ReconciliationSummary, err error) {
 	ctx = s.comp.Logger.GetLogger().With().Str("component", "Process Service").Ctx(ctx).Logger().WithContext(s.comp.Logger.GetCtx())
 	defer func() {
 		_ = s.repo.RepoProcess.Close()
+		if bar != nil {
+			_ = bar.Clear()
+		}
 	}()
 
 	_, err = hunch.Waterfall(
 		ctx,
 		func(c context.Context, _ interface{}) (interface{}, error) {
+			if bar != nil {
+				bar.Describe("[cyan][1/8] Pre Process Generate Reconciliation...")
+			}
+
 			er := s.repo.RepoProcess.Pre(
 				c,
 				s.comp.Config.Reconciliation.ListBank,
 				s.comp.Config.Reconciliation.FromDate,
 				s.comp.Config.Reconciliation.ToDate,
 			)
+
 			log.Err(c, "[process.NewSvc] GenerateReconciliation RepoProcess.Pre executed", er)
 			return nil, err
 		},
 		func(c context.Context, _ interface{}) (interface{}, error) {
+			if bar != nil {
+				bar.Describe("[cyan][2/8] Parse System Trx Files...")
+			}
+
 			data, er := s.parseSystemTrxFiles(c, afs)
 			log.Err(c, "[process.NewSvc] GenerateReconciliation parseSystemTrxFiles executed", er)
 			if er != nil {
 				return nil, er
 			}
+
+			if bar != nil {
+				bar.Describe("[cyan][3/8] Import System Trx to DB...")
+			}
+
 			er = s.importReconcileSystemDataToDB(c, data)
 			log.Err(c, "[process.NewSvc] GenerateReconciliation importReconcileSystemDataToDB executed", er)
 			return nil, er
 		},
 		func(c context.Context, _ interface{}) (interface{}, error) {
+			if bar != nil {
+				bar.Describe("[cyan][4/8] Parse Bank Trx Files...")
+			}
+
 			data, er := s.parseBankTrxFiles(c, afs)
 			log.Err(c, "[process.NewSvc] GenerateReconciliation parseBankTrxFiles executed", er)
 			if er != nil {
 				return nil, er
 			}
+
+			if bar != nil {
+				bar.Describe("[cyan][5/8] Import Bank Trx to DB...")
+			}
+
 			er = s.importReconcileBankDataToDB(c, data)
 			log.Err(c, "[process.NewSvc] GenerateReconciliation importReconcileBankDataToDB executed", er)
 
 			return nil, er
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
+			if bar != nil {
+				bar.Describe("[cyan][6/8] Calculate Reconciliation Data...")
+			}
+
 			data, er := s.repo.RepoProcess.GetReconciliation(
 				c,
 			)
 			log.Err(c, "[process.NewSvc] GenerateReconciliation RepoProcess.GetReconciliation executed", er)
+
+			if bar != nil {
+				bar.Describe("[cyan][7/8] Generate Reconciliation Report Files...")
+			}
+
 			returnData, er = s.generateReconciliationSummaryAndFiles(c, data)
 			if er != nil {
 				return nil, er
@@ -253,6 +287,10 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs) (returnD
 			return nil, er
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
+			if bar != nil {
+				bar.Describe("[cyan][8/8] Post Process Generate Reconciliation...")
+			}
+
 			er := s.repo.RepoProcess.Post(
 				c,
 			)

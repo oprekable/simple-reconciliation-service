@@ -12,11 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/afero"
-
-	"github.com/samber/lo"
-
 	"github.com/aaronjan/hunch"
+	"github.com/samber/lo"
+	"github.com/schollz/progressbar/v3"
+	"github.com/spf13/afero"
 )
 
 type Svc struct {
@@ -36,17 +35,36 @@ func NewSvc(
 	}
 }
 
-func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs) (returnSummary Summary, err error) {
+func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.ProgressBar, isDeleteDirectory bool) (returnSummary Summary, err error) {
 	ctx = s.comp.Logger.GetLogger().With().Str("component", "Sample Service").Ctx(ctx).Logger().WithContext(s.comp.Logger.GetCtx())
 
 	var trxData []sample.TrxData
 	defer func() {
 		_ = s.repo.RepoSample.Close()
+		if bar != nil {
+			_ = bar.Clear()
+		}
 	}()
 
 	_, err = hunch.Waterfall(
 		ctx,
 		func(c context.Context, _ interface{}) (interface{}, error) {
+			if bar != nil {
+				bar.Describe("[cyan][1/5] Pre Process Generate Sample...")
+			}
+
+			if isDeleteDirectory {
+				if er := csvhelper.DeleteDirectory(c, fs, s.comp.Config.Reconciliation.SystemTRXPath); er != nil {
+					log.Err(c, "[sample.NewSvc] DeleteDirectory SystemTRXPath", er)
+					return nil, er
+				}
+
+				if er := csvhelper.DeleteDirectory(c, fs, s.comp.Config.Reconciliation.BankTRXPath); er != nil {
+					log.Err(c, "[sample.NewSvc] DeleteDirectory BankTRXPath", er)
+					return nil, er
+				}
+			}
+
 			er := s.repo.RepoSample.Pre(
 				c,
 				s.comp.Config.Reconciliation.ListBank,
@@ -56,33 +74,43 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs) (returnSummary Su
 				s.comp.Config.Reconciliation.PercentageMatch,
 			)
 
-			log.AddErr(c, er)
-			log.Msg(c, "[sample.NewSvc] RepoSample.Pre executed")
-
+			log.Err(c, "[sample.NewSvc] RepoSample.Pre executed", er)
 			return nil, err
 		},
 		func(c context.Context, _ interface{}) (interface{}, error) {
+			if bar != nil {
+				bar.Describe("[cyan][2/5] Populate Trx Data...")
+			}
+
 			r, er := s.repo.RepoSample.GetTrx(
 				c,
 			)
 
-			log.AddErr(c, er)
-			log.Msg(c, "[sample.NewSvc] RepoSample.GetTrx executed")
-
+			log.Err(c, "[sample.NewSvc] RepoSample.GetTrx executed", er)
 			return r, er
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			trxData = i.([]sample.TrxData)
+			if bar != nil {
+				bar.Describe("[cyan][3/5] Post Process Generate Sample...")
+			}
+
+			if i != nil {
+				trxData = i.([]sample.TrxData)
+			}
+
 			er := s.repo.RepoSample.Post(
 				c,
 			)
 
-			log.AddErr(c, er)
-			log.Msg(c, "[sample.NewSvc] RepoSample.Post executed")
+			log.Err(c, "[sample.NewSvc] RepoSample.Post executed", er)
 
 			return nil, er
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
+			if bar != nil {
+				bar.Describe("[cyan][4/5] Parse Sample Data...")
+			}
+
 			systemTrxData := make([]SystemTrxData, 0, len(trxData))
 			bankTrxData := make(map[string][]interface{})
 
@@ -146,6 +174,10 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs) (returnSummary Su
 
 			log.Msg(c, "[sample.NewSvc] populate systemTrxData & bankTrxData executed")
 
+			if bar != nil {
+				bar.Describe("[cyan][5/5] Export Sample Data to CSV files...")
+			}
+
 			fileNameSuffix := strconv.FormatInt(time.Now().Unix(), 10)
 			returnSummary.FileSystemTrx = fmt.Sprintf("%s/%s.csv", s.comp.Config.Reconciliation.SystemTRXPath, fileNameSuffix)
 			returnSummary.TotalSystemTrx = int64(len(systemTrxData))
@@ -159,11 +191,10 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs) (returnSummary Su
 						fs,
 						returnSummary.FileSystemTrx,
 						systemTrxData,
-						true,
+						isDeleteDirectory,
 					)
 
-					log.AddErr(ct, er)
-					log.Msg(c, "[sample.NewSvc] save csv file "+returnSummary.FileSystemTrx+" executed")
+					log.Err(c, "[sample.NewSvc] save csv file "+returnSummary.FileSystemTrx+" executed", er)
 
 					return nil, er
 				},
@@ -178,6 +209,7 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs) (returnSummary Su
 					fs,
 					returnSummary.FileBankTrx[bankName],
 					trxData,
+					isDeleteDirectory,
 				)
 
 				returnSummary.TotalBankTrx[bankName] = totalBankTrx
@@ -194,7 +226,7 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs) (returnSummary Su
 	return
 }
 
-func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice interface{}) (totalData int64, executor hunch.Executable) {
+func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice interface{}, isDeleteDirectory bool) (totalData int64, executor hunch.Executable) {
 	switch value := trxDataSlice.(type) {
 	case []interface{}:
 		{
@@ -212,11 +244,10 @@ func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice interfac
 							fs,
 							filePath,
 							bd,
-							true,
+							isDeleteDirectory,
 						)
 
-						log.AddErr(ct, er)
-						log.Msg(ct, "[sample.NewSvc] save csv file "+filePath+" executed")
+						log.Err(ct, "[sample.NewSvc] save csv file "+filePath+" executed", er)
 						return nil, er
 					}
 				}
@@ -233,11 +264,10 @@ func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice interfac
 							fs,
 							filePath,
 							bd,
-							true,
+							isDeleteDirectory,
 						)
 
-						log.AddErr(ct, er)
-						log.Msg(ct, "[sample.NewSvc] save csv file "+filePath+" executed")
+						log.Err(ct, "[sample.NewSvc] save csv file "+filePath+" executed", er)
 						return nil, er
 					}
 				}
@@ -254,11 +284,10 @@ func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice interfac
 							fs,
 							filePath,
 							bd,
-							true,
+							isDeleteDirectory,
 						)
 
-						log.AddErr(ct, er)
-						log.Msg(ct, "[sample.NewSvc] save csv file "+filePath+" executed")
+						log.Err(ct, "[sample.NewSvc] save csv file "+filePath+" executed", er)
 						return nil, er
 					}
 				}

@@ -35,7 +35,7 @@ func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz
 	if err != nil {
 		return nil, nil, err
 	}
-	logger := clogger.NewLogger(ctx)
+	logger := clogger.ProviderLogger(ctx, config)
 	erType := cerror.ProvideErType(errType)
 	cerrorError := cerror.NewError(erType)
 	dbSqlite, err := csqlite.NewDBSqlite(config, logger)

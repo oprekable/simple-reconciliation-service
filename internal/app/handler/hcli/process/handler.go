@@ -11,9 +11,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/spf13/afero"
-
+	"github.com/k0kubun/go-ansi"
 	"github.com/olekukonko/tablewriter"
+	"github.com/schollz/progressbar/v3"
+	"github.com/spf13/afero"
 )
 
 const name = "process"
@@ -32,10 +33,19 @@ func (h *Handler) Exec() error {
 	if h.comp == nil || h.svc == nil || h.repo == nil {
 		return nil
 	}
-	summary, err := h.svc.SvcProcess.GenerateReconciliation(context.Background(), afero.NewOsFs())
-	if err != nil {
-		return err
-	}
+
+	bar := progressbar.NewOptions(-1,
+		progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
+		progressbar.OptionEnableColorCodes(true),
+		progressbar.OptionSetWidth(15),
+		progressbar.OptionSpinnerType(17),
+		progressbar.OptionSetTheme(progressbar.Theme{
+			Saucer:        "[green]=[reset]",
+			SaucerHead:    "[green]>[reset]",
+			SaucerPadding: " ",
+			BarStart:      "[",
+			BarEnd:        "]",
+		}))
 
 	args := [][]string{
 		{
@@ -64,7 +74,6 @@ func (h *Handler) Exec() error {
 		},
 	}
 
-	fmt.Println("")
 	tableArgs := tablewriter.NewWriter(os.Stdout)
 	tableArgs.SetHeader([]string{"Config", "Value"})
 	tableArgs.SetBorder(false)
@@ -72,6 +81,11 @@ func (h *Handler) Exec() error {
 	tableArgs.AppendBulk(args)
 	tableArgs.Render()
 	fmt.Println("")
+
+	summary, err := h.svc.SvcProcess.GenerateReconciliation(context.Background(), afero.NewOsFs(), bar)
+	if err != nil {
+		return err
+	}
 
 	dataDesc := [][]string{
 		{"Total number of transactions processed", strconv.FormatInt(summary.TotalProcessedSystemTrx, 10)},
@@ -116,6 +130,8 @@ func (h *Handler) Exec() error {
 	tableFilePath.AppendBulk(dataFilePath)
 	tableFilePath.Render()
 	fmt.Println("")
+
+	bar.Describe("[cyan]Done")
 
 	return nil
 }

@@ -39,7 +39,7 @@ go-lint-fix-struct-staticcheck-govulncheck: generate
 	@golangci-lint run ./... --fix
 	@staticcheck ./...
 	@fieldalignment -fix ./...
-	@govulncheck ./...
+	@govulncheck -show verbose ./...
 
 .PHONY: test
 test:
@@ -52,11 +52,11 @@ run:
 
 .PHONY: run-sample
 run-sample:
-	 @time env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go sample -a 80000
+	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go sample --listbank=bca,bni,mandiri,bri,danamon --percentagematch=100 --amountdata=1000000 --from=$$(date -j -v -30d "+%Y-%m-%d") --to=$$(date -j -v -1d "+%Y-%m-%d")
 
 .PHONY: run-process
 run-process:
-	 @time env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go process
+	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go process --listbank=bca,bni,mandiri,bri,danamon --from=$$(date -j -v -30d "+%Y-%m-%d") --to=$$(date -j -v -1d "+%Y-%m-%d")
 
 .PHONY: go-version
 go-version:

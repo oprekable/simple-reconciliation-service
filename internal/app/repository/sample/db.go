@@ -10,10 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aaronjan/hunch"
 	"github.com/blockloop/scan/v2"
 	"github.com/pkg/errors"
-
-	"github.com/aaronjan/hunch"
 )
 
 type DB struct {

@@ -18,10 +18,14 @@ type Logger struct {
 	ctx context.Context
 }
 
-func NewLogger(ctx context.Context) *Logger {
+func NewLogger(ctx context.Context, logOutWriter io.Writer) *Logger {
 	re := regexp.MustCompile(`\r?\n`)
 	var writers []io.Writer
-	stdOut := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339Nano}
+	if logOutWriter == nil {
+		logOutWriter = os.Stdout
+	}
+
+	stdOut := zerolog.ConsoleWriter{Out: logOutWriter, TimeFormat: time.RFC3339Nano}
 	stdOut.FormatLevel = func(i interface{}) string {
 		return strings.ToUpper(fmt.Sprintf("| %-6s|", i))
 	}
