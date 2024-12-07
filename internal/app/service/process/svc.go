@@ -92,7 +92,31 @@ func (s *Svc) parseSystemTrxFiles(ctx context.Context, afs afero.Fs) (returnData
 }
 
 func (s *Svc) importReconcileSystemDataToDB(ctx context.Context, data []*parser.SystemTrxData) (err error) {
-	return s.repo.RepoProcess.ImportSystemTrx(ctx, data)
+	defSize := len(data) / s.comp.Config.Reconciliation.NumberWorker
+	numBigger := len(data) - defSize*s.comp.Config.Reconciliation.NumberWorker
+	size := defSize + 1
+
+	for i, idx := 0, 0; i < s.comp.Config.Reconciliation.NumberWorker; i++ {
+		if i == numBigger {
+			size--
+			if size == 0 {
+				break
+			}
+		}
+
+		err = s.repo.RepoProcess.ImportSystemTrx(
+			ctx,
+			data[idx:idx+size],
+		)
+
+		if err != nil {
+			return
+		}
+
+		idx += size
+	}
+
+	return
 }
 
 func (s *Svc) parseBankTrxFiles(ctx context.Context, afs afero.Fs) (returnData []*parser.BankTrxData, err error) {
@@ -193,7 +217,31 @@ func (s *Svc) parseBankTrxFiles(ctx context.Context, afs afero.Fs) (returnData [
 }
 
 func (s *Svc) importReconcileBankDataToDB(ctx context.Context, data []*parser.BankTrxData) (err error) {
-	return s.repo.RepoProcess.ImportBankTrx(ctx, data)
+	defSize := len(data) / s.comp.Config.Reconciliation.NumberWorker
+	numBigger := len(data) - defSize*s.comp.Config.Reconciliation.NumberWorker
+	size := defSize + 1
+
+	for i, idx := 0, 0; i < s.comp.Config.Reconciliation.NumberWorker; i++ {
+		if i == numBigger {
+			size--
+			if size == 0 {
+				break
+			}
+		}
+
+		err = s.repo.RepoProcess.ImportBankTrx(
+			ctx,
+			data[idx:idx+size],
+		)
+
+		if err != nil {
+			return
+		}
+
+		idx += size
+	}
+
+	return
 }
 
 func (s *Svc) generateReconciliationSummaryAndFiles(ctx context.Context, data []process.ReconciliationData) (returnData ReconciliationSummary, err error) {

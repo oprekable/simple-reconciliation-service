@@ -8,9 +8,10 @@ import (
 
 // SqliteParameters ..
 type SqliteParameters struct {
-	DBPath    string `default:":memory:" mapstructure:"db_path"`
-	Cache     string `default:"shared"   mapstructure:"cache"`
-	IsEnabled bool   `default:"false"    mapstructure:"is_enabled"`
+	DBPath      string `default:":memory:" mapstructure:"db_path"`
+	Cache       string `default:"shared"   mapstructure:"cache"`
+	JournalMode string `default:"WAL"      mapstructure:"journal_mode"`
+	IsEnabled   bool   `default:"false"    mapstructure:"is_enabled"`
 }
 
 func (pp *SqliteParameters) Options(logPrefix string) (returnData sql.DBSqliteOption) {

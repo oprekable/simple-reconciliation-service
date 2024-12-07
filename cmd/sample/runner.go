@@ -34,6 +34,7 @@ func Runner(cmd *cobra.Command, _ []string) (er error) {
 	app.GetComponents().Config.Reconciliation.BankTRXPath = root.FlagBankTRXPathValue
 	app.GetComponents().Config.Reconciliation.ReportTRXPath = root.FlagReportTRXPathValue
 	app.GetComponents().Config.Reconciliation.ListBank = root.FlagListBankValue
+	app.GetComponents().Config.Reconciliation.IsDeleteCurrentSampleDirectory = root.FlagIsDeleteCurrentSampleDirectoryValue
 
 	toDate, er := time.Parse("2006-01-02", root.FlagToDateValue)
 	if er != nil {

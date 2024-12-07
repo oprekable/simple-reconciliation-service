@@ -36,6 +36,9 @@ const (
 	FlagPercentageMatchSampleToGenerate      string = "percentagematch"
 	FlagPercentageMatchSampleToGenerateShort string = "p"
 	FlagPercentageMatchSampleToGenerateUsage string = `percentage of matched trx for data sample to generate`
+	FlagIsDeleteCurrentSampleDirectory       string = "deleteoldfile"
+	FlagIsDeleteCurrentSampleDirectoryShort  string = "d"
+	FlagIsDeleteCurrentSampleDirectoryUsage  string = `delete old files`
 )
 
 var EmbedFS *embed.FS
@@ -58,3 +61,4 @@ var FlagTotalDataSampleToGenerateValue int64
 var DefaultTotalDataSampleToGenerate int64 = 1000
 var FlagPercentageMatchSampleToGenerateValue int
 var DefaultPercentageMatchSampleToGenerate = 100
+var FlagIsDeleteCurrentSampleDirectoryValue bool

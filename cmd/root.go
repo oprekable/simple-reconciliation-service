@@ -105,6 +105,14 @@ func init() {
 		root.DefaultPercentageMatchSampleToGenerate,
 		root.FlagPercentageMatchSampleToGenerateUsage,
 	)
+
+	rootCmd.PersistentFlags().BoolVarP(
+		&root.FlagIsDeleteCurrentSampleDirectoryValue,
+		root.FlagIsDeleteCurrentSampleDirectory,
+		root.FlagIsDeleteCurrentSampleDirectoryShort,
+		true,
+		root.FlagIsDeleteCurrentSampleDirectoryUsage,
+	)
 }
 
 func Execute(embedFS *embed.FS) {

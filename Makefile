@@ -48,15 +48,15 @@ test:
 
 .PHONY: run
 run:
-	@time env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go
+	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go
 
 .PHONY: run-sample
 run-sample:
-	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go sample --listbank=bca,bni,mandiri,bri,danamon --percentagematch=100 --amountdata=1000000 --from=$$(date -j -v -30d "+%Y-%m-%d") --to=$$(date -j -v -1d "+%Y-%m-%d")
+	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go sample --listbank=bca,bni,mandiri,bri,danamon --percentagematch=70 --amountdata=1000000 --from=$$(date -j -v -30d "+%Y-%m-%d") --to=$$(date -j -v -1d "+%Y-%m-%d") -d=true
 
 .PHONY: run-process
 run-process:
-	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go process --listbank=bca,bni,mandiri,bri,danamon --from=$$(date -j -v -30d "+%Y-%m-%d") --to=$$(date -j -v -1d "+%Y-%m-%d")
+	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go process --listbank=bca,bni,mandiri,bri,danamon --from=$$(date -j -v -30d "+%Y-%m-%d") --to=$$(date -j -v -1d "+%Y-%m-%d") -d=false
 
 .PHONY: go-version
 go-version:

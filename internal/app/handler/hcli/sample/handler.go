@@ -79,6 +79,10 @@ func (h *Handler) Exec() (err error) {
 			fmt.Sprintf("-%s --%s", root.FlagPercentageMatchSampleToGenerateShort, root.FlagPercentageMatchSampleToGenerate),
 			strconv.Itoa(root.FlagPercentageMatchSampleToGenerateValue),
 		},
+		{
+			fmt.Sprintf("-%s --%s", root.FlagIsDeleteCurrentSampleDirectoryShort, root.FlagIsDeleteCurrentSampleDirectory),
+			strconv.FormatBool(root.FlagIsDeleteCurrentSampleDirectoryValue),
+		},
 	}
 
 	fmt.Println("")

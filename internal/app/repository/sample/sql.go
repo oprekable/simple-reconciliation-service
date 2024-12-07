@@ -2,23 +2,23 @@ package sample
 
 const (
 	QueryDropTableArguments = `
--- QuerystmtDropTableArguments
+-- QueryDropTableArguments
 DROP TABLE IF EXISTS arguments;
 `
 
 	QueryDropTableBanks = `
--- QuerystmtDropTableBanks
+-- QueryDropTableBanks
 DROP TABLE IF EXISTS banks;
 `
 
 	QueryDropTableBaseData = `
--- QuerystmtDropTableBaseData
+-- QueryDropTableBaseData
 DROP TABLE IF EXISTS base_data;
 `
 
 	QueryCreateTableArguments = `
 -- QueryCreateTableArguments
-CREATE TEMPORARY TABLE IF NOT EXISTS arguments AS
+CREATE TABLE IF NOT EXISTS arguments AS
 SELECT
     DATETIME(DATE(?)) AS start
     , DATETIME(DATE(?)) AS end
@@ -29,7 +29,7 @@ SELECT
 
 	QueryCreateTableBanks = `
 -- QueryCreateTableBanks
-CREATE TEMPORARY TABLE IF NOT EXISTS banks AS
+CREATE TABLE IF NOT EXISTS banks AS
 SELECT
     key AS id
     , LOWER(value) AS bank_name
@@ -40,7 +40,7 @@ FROM json_each(
 `
 	QueryCreateTableBaseData = `
 -- QueryCreateTableBaseData
-CREATE TEMPORARY TABLE IF NOT EXISTS base_data AS
+CREATE TABLE IF NOT EXISTS base_data AS
 WITH RECURSIVE generate_series(value, randomData) AS (
     SELECT
         start AS v

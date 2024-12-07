@@ -58,52 +58,7 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 			return nil, nil
 		},
 		func(c context.Context, _ interface{}) (interface{}, error) {
-			if d.stmtDropTableArguments == nil {
-				return d.db.PrepareContext(c, QueryDropTableArguments)
-			}
-
-			return nil, nil
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				d.stmtDropTableArguments = i.(*sql.Stmt)
-			}
-
-			return tx.StmtContext(ctx, d.stmtDropTableArguments).ExecContext( //nolint:sqlclosecheck
-				c,
-			)
-		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
-			if d.stmtDropTableBanks == nil {
-				return d.db.PrepareContext(c, QueryDropTableBanks)
-			}
-
-			return nil, nil
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				d.stmtDropTableBanks = i.(*sql.Stmt)
-			}
-
-			return tx.StmtContext(ctx, d.stmtDropTableBanks).ExecContext( //nolint:sqlclosecheck
-				c,
-			)
-		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
-			if d.stmtDropTableBaseData == nil {
-				return d.db.PrepareContext(c, QueryDropTableBaseData)
-			}
-
-			return nil, nil
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				d.stmtDropTableBaseData = i.(*sql.Stmt)
-			}
-
-			return tx.StmtContext(ctx, d.stmtDropTableBaseData).ExecContext( //nolint:sqlclosecheck
-				c,
-			)
+			return nil, d.dropTables(c, tx)
 		},
 		func(c context.Context, _ interface{}) (interface{}, error) {
 			if d.stmtCreateTableArguments == nil {
@@ -242,21 +197,9 @@ func (d *DB) GetTrx(ctx context.Context) (returnData []TrxData, err error) {
 	return
 }
 
-func (d *DB) Post(ctx context.Context) (err error) {
-	var tx *sql.Tx
-
+func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
 	_, err = hunch.Waterfall(
 		ctx,
-		func(c context.Context, _ interface{}) (interface{}, error) {
-			return d.db.BeginTx(ctx, nil)
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				tx = i.(*sql.Tx)
-			}
-
-			return nil, nil
-		},
 		func(c context.Context, _ interface{}) (interface{}, error) {
 			if d.stmtDropTableArguments == nil {
 				return d.db.PrepareContext(c, QueryDropTableArguments)
@@ -304,6 +247,29 @@ func (d *DB) Post(ctx context.Context) (err error) {
 			return tx.StmtContext(ctx, d.stmtDropTableBaseData).ExecContext( //nolint:sqlclosecheck
 				c,
 			)
+		},
+	)
+
+	return
+}
+
+func (d *DB) Post(ctx context.Context) (err error) {
+	var tx *sql.Tx
+
+	_, err = hunch.Waterfall(
+		ctx,
+		func(c context.Context, _ interface{}) (interface{}, error) {
+			return d.db.BeginTx(ctx, nil)
+		},
+		func(c context.Context, i interface{}) (interface{}, error) {
+			if i != nil {
+				tx = i.(*sql.Tx)
+			}
+
+			return nil, nil
+		},
+		func(c context.Context, _ interface{}) (interface{}, error) {
+			return nil, d.dropTables(c, tx)
 		},
 	)
 

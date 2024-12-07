@@ -72,6 +72,10 @@ func (h *Handler) Exec() error {
 			fmt.Sprintf("-%s --%s", root.FlagListBankShort, root.FlagListBank),
 			strings.Join(root.FlagListBankValue, ","),
 		},
+		{
+			fmt.Sprintf("-%s --%s", root.FlagIsDeleteCurrentSampleDirectoryShort, root.FlagIsDeleteCurrentSampleDirectory),
+			strconv.FormatBool(root.FlagIsDeleteCurrentSampleDirectoryValue),
+		},
 	}
 
 	tableArgs := tablewriter.NewWriter(os.Stdout)

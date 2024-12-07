@@ -15,16 +15,18 @@ import (
 
 // DBSqliteOption options for postgres connection
 type DBSqliteOption struct {
-	LogPrefix string `deepcopier:"skip"`
-	DBPath    string `deepcopier:"field:DBPath"`
-	Cache     string `deepcopier:"field:Cache"`
+	LogPrefix   string `deepcopier:"skip"`
+	DBPath      string `deepcopier:"field:DBPath"`
+	Cache       string `deepcopier:"field:Cache"`
+	JournalMode string `deepcopier:"field:JournalMode"`
 }
 
 func NewSqliteDatabase(option DBSqliteOption, logger zerolog.Logger, isDoLogging bool) (db *sql.DB, err error) {
 	dsn := fmt.Sprintf(
-		"%s?cache=%s&",
+		"%s?cache=%s&_pragma=journal_mode(%s)",
 		option.DBPath,
 		option.Cache,
+		option.JournalMode,
 	)
 
 	loggerAdapter := NewNoopLog()

@@ -4,12 +4,14 @@ is_do_logging = false
 
 [sqlite.write]
 is_enabled = true
-db_path = ":memory:"
-#db_path = "/Users/ekofedriyanto/Codes/simple-reconciliation-service/a.db"
+#db_path = ":memory:"
+db_path = "/Users/ekofedriyanto/Codes/simple-reconciliation-service/a.db"
 cache = "shared"
+journal_mode = "WAL"
 
 [sqlite.read]
 is_enabled = true
-db_path = ":memory:"
-#db_path = "/Users/ekofedriyanto/Codes/simple-reconciliation-service/a.db"
+#db_path = ":memory:"
+db_path = "/Users/ekofedriyanto/Codes/simple-reconciliation-service/a.db"
 cache = "shared"
+journal_mode = "WAL"

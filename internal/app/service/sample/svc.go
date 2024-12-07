@@ -126,7 +126,7 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 					systemTrxData = append(systemTrxData, item)
 				}
 
-				if data.IsBankTrx {
+				if data.IsBankTrx || (!data.IsBankTrx && !data.IsSystemTrx) {
 					bank := strings.ToLower(data.Bank)
 					if _, ok := bankTrxData[bank]; !ok {
 						bankTrxData[bank] = make([]interface{}, 0, len(trxData))
