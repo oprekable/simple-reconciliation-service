@@ -1,5 +1,10 @@
 package parser
 
+type TrxData struct {
+	SystemTrx []*SystemTrxData
+	BankTrx   []*BankTrxData
+}
+
 type BankTrxData struct {
 	UniqueIdentifier string
 	Date             string

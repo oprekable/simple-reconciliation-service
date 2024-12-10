@@ -3,16 +3,17 @@ package process
 import (
 	"context"
 	"encoding/csv"
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"simple-reconciliation-service/internal/app/component"
 	"simple-reconciliation-service/internal/app/repository"
-	"simple-reconciliation-service/internal/app/repository/process"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser"
 	"simple-reconciliation-service/internal/pkg/utils/log"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/aaronjan/hunch"
 	"github.com/samber/lo/parallel"
@@ -39,7 +40,7 @@ func NewSvc(
 
 func (s *Svc) parseSystemTrxFiles(ctx context.Context, afs afero.Fs) (returnData []*parser.SystemTrxData, err error) {
 	var filePathSystemTrx []string
-	cleanPath := filepath.Clean(s.comp.Config.Reconciliation.SystemTRXPath)
+	cleanPath := filepath.Clean(s.comp.Config.Data.Reconciliation.SystemTRXPath)
 	er := afero.Walk(afs, cleanPath, func(path string, info fs.FileInfo, err error) error {
 		if filepath.Ext(path) == ".csv" {
 			filePathSystemTrx = append(
@@ -82,6 +83,7 @@ func (s *Svc) parseSystemTrxFiles(ctx context.Context, afs afero.Fs) (returnData
 			}
 			return
 		}
+
 		returnData = append(returnData, data...)
 		if f != nil {
 			_ = f.Close()
@@ -92,11 +94,11 @@ func (s *Svc) parseSystemTrxFiles(ctx context.Context, afs afero.Fs) (returnData
 }
 
 func (s *Svc) importReconcileSystemDataToDB(ctx context.Context, data []*parser.SystemTrxData) (err error) {
-	defSize := len(data) / s.comp.Config.Reconciliation.NumberWorker
-	numBigger := len(data) - defSize*s.comp.Config.Reconciliation.NumberWorker
+	defSize := len(data) / s.comp.Config.Data.Reconciliation.NumberWorker
+	numBigger := len(data) - defSize*s.comp.Config.Data.Reconciliation.NumberWorker
 	size := defSize + 1
 
-	for i, idx := 0, 0; i < s.comp.Config.Reconciliation.NumberWorker; i++ {
+	for i, idx := 0, 0; i < s.comp.Config.Data.Reconciliation.NumberWorker; i++ {
 		if i == numBigger {
 			size--
 			if size == 0 {
@@ -125,7 +127,7 @@ func (s *Svc) parseBankTrxFiles(ctx context.Context, afs afero.Fs) (returnData [
 		FilePath string
 	}
 	var filePathBankTrx []FilePathBankTrx
-	cleanPath := filepath.Clean(s.comp.Config.Reconciliation.BankTRXPath)
+	cleanPath := filepath.Clean(s.comp.Config.Data.Reconciliation.BankTRXPath)
 	// scan only csv file with first folder as bank name, bank should in the list of accepted bank name
 	er := afero.Walk(afs, cleanPath, func(path string, info fs.FileInfo, err error) error {
 		if filepath.Ext(path) == ".csv" {
@@ -134,7 +136,7 @@ func (s *Svc) parseBankTrxFiles(ctx context.Context, afs afero.Fs) (returnData [
 				pathSuffix := strings.Split(splitPath[1], string(os.PathSeparator))
 				if len(pathSuffix) > 1 {
 					bank := pathSuffix[1]
-					if slices.Contains(s.comp.Config.Reconciliation.ListBank, bank) {
+					if slices.Contains(s.comp.Config.Data.Reconciliation.ListBank, bank) {
 						filePathBankTrx = append(
 							filePathBankTrx,
 							FilePathBankTrx{
@@ -217,11 +219,11 @@ func (s *Svc) parseBankTrxFiles(ctx context.Context, afs afero.Fs) (returnData [
 }
 
 func (s *Svc) importReconcileBankDataToDB(ctx context.Context, data []*parser.BankTrxData) (err error) {
-	defSize := len(data) / s.comp.Config.Reconciliation.NumberWorker
-	numBigger := len(data) - defSize*s.comp.Config.Reconciliation.NumberWorker
+	defSize := len(data) / s.comp.Config.Data.Reconciliation.NumberWorker
+	numBigger := len(data) - defSize*s.comp.Config.Data.Reconciliation.NumberWorker
 	size := defSize + 1
 
-	for i, idx := 0, 0; i < s.comp.Config.Reconciliation.NumberWorker; i++ {
+	for i, idx := 0, 0; i < s.comp.Config.Data.Reconciliation.NumberWorker; i++ {
 		if i == numBigger {
 			size--
 			if size == 0 {
@@ -244,7 +246,7 @@ func (s *Svc) importReconcileBankDataToDB(ctx context.Context, data []*parser.Ba
 	return
 }
 
-func (s *Svc) generateReconciliationSummaryAndFiles(ctx context.Context, data []process.ReconciliationData) (returnData ReconciliationSummary, err error) {
+func (s *Svc) generateReconciliationSummaryAndFiles(ctx context.Context) (returnData ReconciliationSummary, err error) {
 	return
 }
 
@@ -261,14 +263,14 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs, bar *pro
 		ctx,
 		func(c context.Context, _ interface{}) (interface{}, error) {
 			if bar != nil {
-				bar.Describe("[cyan][1/8] Pre Process Generate Reconciliation...")
+				bar.Describe("[cyan][1/7] Pre Process Generate Reconciliation...")
 			}
 
 			er := s.repo.RepoProcess.Pre(
 				c,
-				s.comp.Config.Reconciliation.ListBank,
-				s.comp.Config.Reconciliation.FromDate,
-				s.comp.Config.Reconciliation.ToDate,
+				s.comp.Config.Data.Reconciliation.ListBank,
+				s.comp.Config.Data.Reconciliation.FromDate,
+				s.comp.Config.Data.Reconciliation.ToDate,
 			)
 
 			log.Err(c, "[process.NewSvc] GenerateReconciliation RepoProcess.Pre executed", er)
@@ -276,74 +278,124 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs, bar *pro
 		},
 		func(c context.Context, _ interface{}) (interface{}, error) {
 			if bar != nil {
-				bar.Describe("[cyan][2/8] Parse System Trx Files...")
+				bar.Describe("[cyan][2/7] Parse System/Bank Trx Files...")
 			}
 
-			data, er := s.parseSystemTrxFiles(c, afs)
-			log.Err(c, "[process.NewSvc] GenerateReconciliation parseSystemTrxFiles executed", er)
-			if er != nil {
-				return nil, er
-			}
+			var trxData parser.TrxData
+			_, er := hunch.All(
+				c,
+				func(ct context.Context) (interface{}, error) {
+					data, er := s.parseSystemTrxFiles(ct, afs)
+					log.Err(ct, "[process.NewSvc] GenerateReconciliation parseSystemTrxFiles executed", er)
+					if er != nil {
+						return nil, er
+					}
 
-			if bar != nil {
-				bar.Describe("[cyan][3/8] Import System Trx to DB...")
-			}
+					dataFiltered := make([]*parser.SystemTrxData, 0, len(data))
 
-			er = s.importReconcileSystemDataToDB(c, data)
-			log.Err(c, "[process.NewSvc] GenerateReconciliation importReconcileSystemDataToDB executed", er)
-			return nil, er
+					parallel.ForEach(data, func(item *parser.SystemTrxData, index int) {
+						t, e := time.Parse("2006-01-02 15:04:05", item.TransactionTime)
+						if e != nil {
+							return
+						}
+
+						minDate := s.comp.Config.Data.Reconciliation.FromDate
+						maxDate := s.comp.Config.Data.Reconciliation.ToDate
+						isOk := (t.Equal(minDate) || t.After(minDate)) && (t.Equal(maxDate) || t.Before(maxDate))
+						if isOk {
+							dataFiltered = append(dataFiltered, item)
+						}
+					})
+
+					trxData.SystemTrx = dataFiltered
+					return nil, nil
+				},
+				func(ct context.Context) (interface{}, error) {
+					data, er := s.parseBankTrxFiles(ct, afs)
+					log.Err(ct, "[process.NewSvc] GenerateReconciliation parseBankTrxFiles executed", er)
+					if er != nil {
+						return nil, er
+					}
+
+					dataFiltered := make([]*parser.BankTrxData, 0, len(data))
+					parallel.ForEach(data, func(item *parser.BankTrxData, index int) {
+						t, e := time.Parse("2006-01-02", item.Date)
+						if e != nil {
+							return
+						}
+
+						minDate := s.comp.Config.Data.Reconciliation.FromDate
+						maxDate := s.comp.Config.Data.Reconciliation.ToDate
+						isOk := (t.Equal(minDate) || t.After(minDate)) && (t.Equal(maxDate) || t.Before(maxDate))
+						if isOk {
+							dataFiltered = append(dataFiltered, item)
+						}
+					})
+
+					trxData.BankTrx = dataFiltered
+					return nil, nil
+				},
+			)
+
+			return trxData, er
 		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
+		func(c context.Context, i interface{}) (interface{}, error) {
+			if i != nil {
+				data := i.(parser.TrxData)
+				if bar != nil {
+					bar.Describe("[cyan][3/7] Import System/Bank Trx to DB...")
+				}
+
+				er := s.importReconcileSystemDataToDB(c, data.SystemTrx)
+				log.Err(c, "[process.NewSvc] GenerateReconciliation importReconcileSystemDataToDB executed", er)
+
+				if bar != nil {
+					bar.Describe("[cyan][4/7] Import Bank Trx to DB...")
+				}
+
+				er = s.importReconcileBankDataToDB(c, data.BankTrx)
+				log.Err(c, "[process.NewSvc] GenerateReconciliation importReconcileBankDataToDB executed", er)
+			} else {
+				return nil, errors.New("empty parse data")
+			}
+			return nil, nil
+		},
+		func(c context.Context, i interface{}) (interface{}, error) {
 			if bar != nil {
-				bar.Describe("[cyan][4/8] Parse Bank Trx Files...")
+				bar.Describe("[cyan][5/7] Calculate Reconciliation Data...")
 			}
 
-			data, er := s.parseBankTrxFiles(c, afs)
-			log.Err(c, "[process.NewSvc] GenerateReconciliation parseBankTrxFiles executed", er)
-			if er != nil {
-				return nil, er
-			}
-
-			if bar != nil {
-				bar.Describe("[cyan][5/8] Import Bank Trx to DB...")
-			}
-
-			er = s.importReconcileBankDataToDB(c, data)
-			log.Err(c, "[process.NewSvc] GenerateReconciliation importReconcileBankDataToDB executed", er)
-
+			er := s.repo.RepoProcess.GenerateReconciliationMap(
+				c,
+			)
+			log.Err(c, "[process.NewSvc] GenerateReconciliation RepoProcess.GenerateReconciliationMap executed", er)
 			return nil, er
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
 			if bar != nil {
-				bar.Describe("[cyan][6/8] Calculate Reconciliation Data...")
+				bar.Describe("[cyan][6/7] Generate Reconciliation Report Files...")
 			}
 
-			data, er := s.repo.RepoProcess.GetReconciliation(
-				c,
-			)
-			log.Err(c, "[process.NewSvc] GenerateReconciliation RepoProcess.GetReconciliation executed", er)
-
-			if bar != nil {
-				bar.Describe("[cyan][7/8] Generate Reconciliation Report Files...")
-			}
-
-			returnData, er = s.generateReconciliationSummaryAndFiles(c, data)
+			rd, er := s.generateReconciliationSummaryAndFiles(c)
 			if er != nil {
 				return nil, er
 			}
+
+			returnData = rd
 			log.Err(c, "[process.NewSvc] GenerateReconciliation generateReconciliationSummaryAndFiles executed", er)
 			return nil, er
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
 			if bar != nil {
-				bar.Describe("[cyan][8/8] Post Process Generate Reconciliation...")
+				bar.Describe("[cyan][7/7] Post Process Generate Reconciliation...")
 			}
-
-			er := s.repo.RepoProcess.Post(
-				c,
-			)
-			log.Err(c, "[process.NewSvc] GenerateReconciliation RepoProcess.Post executed", er)
-			return nil, er
+			//
+			//er := s.repo.RepoProcess.Post(
+			//	c,
+			//)
+			//log.Err(c, "[process.NewSvc] GenerateReconciliation RepoProcess.Post executed", er)
+			//return nil, er
+			return nil, nil
 		},
 	)
 

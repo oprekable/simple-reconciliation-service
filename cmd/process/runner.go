@@ -7,6 +7,7 @@ import (
 	"simple-reconciliation-service/internal/inject"
 	"simple-reconciliation-service/internal/pkg/utils/atexit"
 	"simple-reconciliation-service/variable"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -34,6 +35,20 @@ func Runner(cmd *cobra.Command, _ []string) (er error) {
 	app.GetComponents().Config.Reconciliation.ReportTRXPath = root.FlagReportTRXPathValue
 	app.GetComponents().Config.Reconciliation.ListBank = root.FlagListBankValue
 	app.GetComponents().Config.Reconciliation.IsDeleteCurrentSampleDirectory = root.FlagIsDeleteCurrentSampleDirectoryValue
+
+	toDate, er := time.Parse("2006-01-02", root.FlagToDateValue)
+	if er != nil {
+		return er
+	}
+
+	app.GetComponents().Config.Reconciliation.ToDate = toDate
+
+	fromDate, er := time.Parse("2006-01-02", root.FlagFromDateValue)
+	if er != nil {
+		return er
+	}
+
+	app.GetComponents().Config.Reconciliation.FromDate = fromDate
 
 	atexit.Add(cleanup)
 	app.Start()

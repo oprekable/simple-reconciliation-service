@@ -93,7 +93,7 @@ func (h *Handler) Exec() (err error) {
 	tableArgs.AppendBulk(args)
 	tableArgs.Render()
 
-	summary, err := h.svc.SvcSample.GenerateSample(context.Background(), afero.NewOsFs(), bar, h.comp.Config.Reconciliation.IsDeleteCurrentSampleDirectory)
+	summary, err := h.svc.SvcSample.GenerateSample(context.Background(), afero.NewOsFs(), bar, h.comp.Config.Data.Reconciliation.IsDeleteCurrentSampleDirectory)
 	if err != nil {
 		return err
 	}

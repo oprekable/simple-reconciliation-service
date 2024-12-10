@@ -52,11 +52,11 @@ run:
 
 .PHONY: run-sample
 run-sample:
-	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go sample --listbank=bca,bni,mandiri,bri,danamon --percentagematch=70 --amountdata=1000000 --from=$$(date -j -v -30d "+%Y-%m-%d") --to=$$(date -j -v -1d "+%Y-%m-%d") -d=true
+	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go sample --listbank=bca,bni,mandiri,bri,danamon --percentagematch=70 --amountdata=1000000 --from=$$(date -j -v -90d "+%Y-%m-%d") --to=$$(date -j "+%Y-%m-%d") -d=true
 
 .PHONY: run-process
 run-process:
-	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go process --listbank=bca,bni,mandiri,bri,danamon --from=$$(date -j -v -30d "+%Y-%m-%d") --to=$$(date -j -v -1d "+%Y-%m-%d") -d=false
+	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go process --listbank=bca,bni,mandiri,bri,danamon --from=$$(date -j -v -3d "+%Y-%m-%d") --to=$$(date -j "+%Y-%m-%d") -d=false
 
 .PHONY: go-version
 go-version:

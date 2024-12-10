@@ -38,25 +38,26 @@ func NewDB(
 }
 
 func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, toDate time.Time, limitTrxData int64, matchPercentage int) (err error) {
-	var tx *sql.Tx
+	defer func() {
+		log.Err(
+			ctx,
+			"[sample.NewDB] Exec Pre method from db",
+			err,
+		)
+	}()
 
-	e := d.db.Ping()
-	if e != nil {
-		log.AddErr(ctx, e)
+	tx, er := d.db.BeginTx(ctx, nil)
+	if er != nil {
+		return er
+	}
+
+	er = d.db.Ping()
+	if er != nil {
+		return er
 	}
 
 	_, err = hunch.Waterfall(
 		ctx,
-		func(c context.Context, _ interface{}) (interface{}, error) {
-			return d.db.BeginTx(ctx, nil)
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				tx = i.(*sql.Tx)
-			}
-
-			return nil, nil
-		},
 		func(c context.Context, _ interface{}) (interface{}, error) {
 			return nil, d.dropTables(c, tx)
 		},
@@ -72,7 +73,7 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 				d.stmtCreateTableArguments = i.(*sql.Stmt)
 			}
 
-			return tx.StmtContext(ctx, d.stmtCreateTableArguments).ExecContext( //nolint:sqlclosecheck
+			return tx.StmtContext(c, d.stmtCreateTableArguments).ExecContext( //nolint:sqlclosecheck
 				c,
 				startDate.Format("2006-01-02"),
 				toDate.Format("2006-01-02"),
@@ -98,7 +99,7 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 				return nil, err
 			}
 
-			return tx.StmtContext(ctx, d.stmtCreateTableBanks).ExecContext( //nolint:sqlclosecheck
+			return tx.StmtContext(c, d.stmtCreateTableBanks).ExecContext( //nolint:sqlclosecheck
 				c,
 				b.String(),
 			)
@@ -121,7 +122,7 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 				return nil, err
 			}
 
-			return tx.StmtContext(ctx, d.stmtCreateTableBaseData).ExecContext( //nolint:sqlclosecheck
+			return tx.StmtContext(c, d.stmtCreateTableBaseData).ExecContext( //nolint:sqlclosecheck
 				c,
 				b.String(),
 			)
@@ -138,7 +139,7 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 				d.stmtCreateIndexTableBaseData = i.(*sql.Stmt)
 			}
 
-			return tx.StmtContext(ctx, d.stmtCreateIndexTableBaseData).ExecContext( //nolint:sqlclosecheck
+			return tx.StmtContext(c, d.stmtCreateIndexTableBaseData).ExecContext( //nolint:sqlclosecheck
 				c,
 			)
 		},
@@ -150,16 +151,18 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 		err = tx.Commit()
 	}
 
-	log.AddErr(ctx, err)
-	log.Msg(
-		ctx,
-		"[sample.NewDB] Exec Pre method from db",
-	)
-
 	return
 }
 
 func (d *DB) GetTrx(ctx context.Context) (returnData []TrxData, err error) {
+	defer func() {
+		log.Err(
+			ctx,
+			"[sample.NewDB] Exec GetData method from db",
+			err,
+		)
+	}()
+
 	_, err = hunch.Waterfall(
 		ctx,
 		func(c context.Context, _ interface{}) (interface{}, error) {
@@ -184,12 +187,6 @@ func (d *DB) GetTrx(ctx context.Context) (returnData []TrxData, err error) {
 		},
 	)
 
-	log.AddErr(ctx, err)
-	log.Msg(
-		ctx,
-		"[sample.NewDB] Exec GetData method from db",
-	)
-
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		err = core.CErrDBConn.Error()
 	}
@@ -212,7 +209,7 @@ func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
 				d.stmtDropTableArguments = i.(*sql.Stmt)
 			}
 
-			return tx.StmtContext(ctx, d.stmtDropTableArguments).ExecContext( //nolint:sqlclosecheck
+			return tx.StmtContext(c, d.stmtDropTableArguments).ExecContext( //nolint:sqlclosecheck
 				c,
 			)
 		},
@@ -228,7 +225,7 @@ func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
 				d.stmtDropTableBanks = i.(*sql.Stmt)
 			}
 
-			return tx.StmtContext(ctx, d.stmtDropTableBanks).ExecContext( //nolint:sqlclosecheck
+			return tx.StmtContext(c, d.stmtDropTableBanks).ExecContext( //nolint:sqlclosecheck
 				c,
 			)
 		},
@@ -244,7 +241,7 @@ func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
 				d.stmtDropTableBaseData = i.(*sql.Stmt)
 			}
 
-			return tx.StmtContext(ctx, d.stmtDropTableBaseData).ExecContext( //nolint:sqlclosecheck
+			return tx.StmtContext(c, d.stmtDropTableBaseData).ExecContext( //nolint:sqlclosecheck
 				c,
 			)
 		},
@@ -254,20 +251,21 @@ func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
 }
 
 func (d *DB) Post(ctx context.Context) (err error) {
-	var tx *sql.Tx
+	defer func() {
+		log.Err(
+			ctx,
+			"[sample.NewDB] Exec Post method from db",
+			err,
+		)
+	}()
+
+	tx, er := d.db.BeginTx(ctx, nil)
+	if er != nil {
+		return er
+	}
 
 	_, err = hunch.Waterfall(
 		ctx,
-		func(c context.Context, _ interface{}) (interface{}, error) {
-			return d.db.BeginTx(ctx, nil)
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				tx = i.(*sql.Tx)
-			}
-
-			return nil, nil
-		},
 		func(c context.Context, _ interface{}) (interface{}, error) {
 			return nil, d.dropTables(c, tx)
 		},
@@ -278,12 +276,6 @@ func (d *DB) Post(ctx context.Context) (err error) {
 	} else {
 		err = tx.Commit()
 	}
-
-	log.AddErr(ctx, err)
-	log.Msg(
-		ctx,
-		"[sample.NewDB] Exec Post method from db",
-	)
 
 	return
 }

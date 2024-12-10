@@ -54,12 +54,12 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 			}
 
 			if isDeleteDirectory {
-				if er := csvhelper.DeleteDirectory(c, fs, s.comp.Config.Reconciliation.SystemTRXPath); er != nil {
+				if er := csvhelper.DeleteDirectory(c, fs, s.comp.Config.Data.Reconciliation.SystemTRXPath); er != nil {
 					log.Err(c, "[sample.NewSvc] DeleteDirectory SystemTRXPath", er)
 					return nil, er
 				}
 
-				if er := csvhelper.DeleteDirectory(c, fs, s.comp.Config.Reconciliation.BankTRXPath); er != nil {
+				if er := csvhelper.DeleteDirectory(c, fs, s.comp.Config.Data.Reconciliation.BankTRXPath); er != nil {
 					log.Err(c, "[sample.NewSvc] DeleteDirectory BankTRXPath", er)
 					return nil, er
 				}
@@ -67,11 +67,11 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 
 			er := s.repo.RepoSample.Pre(
 				c,
-				s.comp.Config.Reconciliation.ListBank,
-				s.comp.Config.Reconciliation.FromDate,
-				s.comp.Config.Reconciliation.ToDate,
-				s.comp.Config.Reconciliation.TotalData,
-				s.comp.Config.Reconciliation.PercentageMatch,
+				s.comp.Config.Data.Reconciliation.ListBank,
+				s.comp.Config.Data.Reconciliation.FromDate,
+				s.comp.Config.Data.Reconciliation.ToDate,
+				s.comp.Config.Data.Reconciliation.TotalData,
+				s.comp.Config.Data.Reconciliation.PercentageMatch,
 			)
 
 			log.Err(c, "[sample.NewSvc] RepoSample.Pre executed", er)
@@ -179,7 +179,7 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 			}
 
 			fileNameSuffix := strconv.FormatInt(time.Now().Unix(), 10)
-			returnSummary.FileSystemTrx = fmt.Sprintf("%s/%s.csv", s.comp.Config.Reconciliation.SystemTRXPath, fileNameSuffix)
+			returnSummary.FileSystemTrx = fmt.Sprintf("%s/%s.csv", s.comp.Config.Data.Reconciliation.SystemTRXPath, fileNameSuffix)
 			returnSummary.TotalSystemTrx = int64(len(systemTrxData))
 
 			executor := make([]hunch.Executable, 0, len(bankTrxData)+1)
@@ -204,7 +204,7 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 			returnSummary.FileBankTrx = make(map[string]string)
 
 			for bankName, trxData := range bankTrxData {
-				returnSummary.FileBankTrx[bankName] = fmt.Sprintf("%s/%s/%s_%s.csv", s.comp.Config.Reconciliation.BankTRXPath, bankName, bankName, fileNameSuffix)
+				returnSummary.FileBankTrx[bankName] = fmt.Sprintf("%s/%s/%s_%s.csv", s.comp.Config.Data.Reconciliation.BankTRXPath, bankName, bankName, fileNameSuffix)
 				totalBankTrx, exec := s.appendExecutor(
 					fs,
 					returnSummary.FileBankTrx[bankName],
