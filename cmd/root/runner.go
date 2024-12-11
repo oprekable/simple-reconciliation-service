@@ -15,24 +15,24 @@ func PersistentPreRunner(_ *cobra.Command, _ []string) (er error) {
 	fromDate, errFrom := time.Parse("2006-01-02", FlagFromDateValue)
 
 	if errFrom != nil {
-		return fmt.Errorf("failed to parse flag 'from date': %v", FlagFromDateValue)
+		return fmt.Errorf("failed to parse flag '-%s' '--%s': %v", FlagFromDateShort, FlagFromDate, FlagFromDateValue)
 	}
 
 	toDate, errTo := time.Parse("2006-01-02", FlagToDateValue)
 	if errTo != nil {
-		return fmt.Errorf("failed to parse flag 'to date': %v", FlagToDateValue)
+		return fmt.Errorf("failed to parse flag '-%s' '--%s': %v", FlagToDateShort, FlagToDate, FlagToDateValue)
 	}
 
 	if fromDate.After(toDate) {
-		return fmt.Errorf("'from date': %v should before 'to date': %v", FlagFromDateValue, FlagToDateValue)
+		return fmt.Errorf("'-%s' '--%s': %v should before '-%s' '--%s': %v", FlagFromDateShort, FlagFromDate, FlagFromDateValue, FlagToDateShort, FlagToDate, FlagToDateValue)
 	}
 
-	if FlagTotalDataSampleToGenerateValue < 0 {
-		return fmt.Errorf("'amountdata': %v should bigger than 0", FlagTotalDataSampleToGenerateValue)
+	if FlagTotalDataSampleToGenerateValue <= 0 {
+		return fmt.Errorf("'-%s' '--%s': %v should bigger than 0", FlagTotalDataSampleToGenerateShort, FlagTotalDataSampleToGenerate, FlagTotalDataSampleToGenerateValue)
 	}
 
 	if FlagPercentageMatchSampleToGenerateValue < 0 || FlagPercentageMatchSampleToGenerateValue > 100 {
-		return fmt.Errorf("'percentagematch': %v should between 0 and 100", FlagPercentageMatchSampleToGenerateValue)
+		return fmt.Errorf("'-%s' '--%s': %v should between 0 and 100", FlagPercentageMatchSampleToGenerateShort, FlagPercentageMatchSampleToGenerate, FlagPercentageMatchSampleToGenerateValue)
 	}
 
 	return nil

@@ -4,10 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser"
 	"simple-reconciliation-service/internal/pkg/utils/log"
 	"strings"
 	"time"
+
+	"github.com/blockloop/scan/v2"
 
 	"github.com/aaronjan/hunch"
 	"github.com/pkg/errors"
@@ -28,6 +31,7 @@ type DB struct {
 	stmtInsertTableSystemTrx         *sql.Stmt
 	stmtInsertTableBankTrx           *sql.Stmt
 	stmtInsertTableReconciliationMap *sql.Stmt
+	stmtGetReconciliationSummary     *sql.Stmt
 }
 
 var _ Repository = (*DB)(nil)
@@ -139,10 +143,11 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 	defer func() {
 		log.Err(
 			ctx,
-			"[sample.NewDB] Exec Pre method from db",
+			"[process.NewDB] Exec Pre method from db",
 			err,
 		)
 	}()
+
 	tx, er := d.db.BeginTx(ctx, nil)
 	if er != nil {
 		return er
@@ -262,7 +267,7 @@ func (d *DB) ImportSystemTrx(ctx context.Context, data []*parser.SystemTrxData) 
 	defer func() {
 		log.Err(
 			ctx,
-			"[sample.NewDB] Exec ImportSystemTrx method from db",
+			fmt.Sprintf("[process.NewDB] ImportSystemTrx method from db (%d data)", len(data)),
 			err,
 		)
 	}()
@@ -317,7 +322,7 @@ func (d *DB) ImportBankTrx(ctx context.Context, data []*parser.BankTrxData) (err
 	defer func() {
 		log.Err(
 			ctx,
-			"[sample.NewDB] Exec ImportBankTrx method from db",
+			fmt.Sprintf("[process.NewDB] Exec ImportBankTrx method to db (%d data)", len(data)),
 			err,
 		)
 	}()
@@ -368,11 +373,11 @@ func (d *DB) ImportBankTrx(ctx context.Context, data []*parser.BankTrxData) (err
 	return
 }
 
-func (d *DB) GenerateReconciliationMap(ctx context.Context) (err error) {
+func (d *DB) GenerateReconciliationMap(ctx context.Context, minAmount float64, maxAmount float64) (err error) {
 	defer func() {
 		log.Err(
 			ctx,
-			"[sample.NewDB] Exec ImportBankTrx method from db",
+			fmt.Sprintf("[process.NewDB] Exec GenerateReconciliationMap method to db (Amount %f - %f)", minAmount, maxAmount),
 			err,
 		)
 	}()
@@ -398,6 +403,8 @@ func (d *DB) GenerateReconciliationMap(ctx context.Context) (err error) {
 
 			return tx.StmtContext(c, d.stmtInsertTableReconciliationMap).ExecContext( //nolint:sqlclosecheck
 				c,
+				minAmount,
+				maxAmount,
 			)
 		},
 	)
@@ -411,11 +418,47 @@ func (d *DB) GenerateReconciliationMap(ctx context.Context) (err error) {
 	return
 }
 
+func (d *DB) GetReconciliationSummary(ctx context.Context) (returnData ReconciliationSummary, err error) {
+	defer func() {
+		log.Err(
+			ctx,
+			"[process.NewDB] Exec GetReconciliationSummary method from db",
+			err,
+		)
+	}()
+
+	_, err = hunch.Waterfall(
+		ctx,
+		func(c context.Context, _ interface{}) (interface{}, error) {
+			if d.stmtGetReconciliationSummary == nil {
+				return d.db.PrepareContext(c, QueryGetReconciliationSummary)
+			}
+
+			return nil, nil
+		},
+		func(c context.Context, i interface{}) (interface{}, error) {
+			if i != nil {
+				d.stmtGetReconciliationSummary = i.(*sql.Stmt)
+			}
+
+			return d.stmtGetReconciliationSummary.QueryContext( //nolint:sqlclosecheck
+				c,
+			)
+		},
+		func(c context.Context, i interface{}) (interface{}, error) {
+			rows := i.(*sql.Rows)
+			return nil, scan.RowStrict(&returnData, rows)
+		},
+	)
+
+	return
+}
+
 func (d *DB) Post(ctx context.Context) (err error) {
 	defer func() {
 		log.Err(
 			ctx,
-			"[sample.NewDB] Exec Post method from db",
+			"[process.NewDB] Exec Post method from db",
 			err,
 		)
 	}()

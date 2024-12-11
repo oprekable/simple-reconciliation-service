@@ -50,13 +50,33 @@ test:
 run:
 	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go
 
+base_args="--showlog=true --listbank=bca,bni,mandiri,bri,danamon --from=$$(date -j -v -120d '+%Y-%m-%d') --to=$$(date -j '+%Y-%m-%d')"
+process_args="${base_args} -d=false"
+sample_args="${base_args} --percentagematch=100 --amountdata=2000 -d=true"
+
+.PHONY: echo-sample-args
+echo-sample-args:
+	@echo $(sample_args)
+	@echo $(sample_args) | pbcopy
+
 .PHONY: run-sample
 run-sample:
-	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go sample --listbank=bca,bni,mandiri,bri,danamon --percentagematch=70 --amountdata=1000000 --from=$$(date -j -v -90d "+%Y-%m-%d") --to=$$(date -j "+%Y-%m-%d") -d=true
+	@echo $(sample_args)
+	@go build .
+	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) ./simple-reconciliation-service sample  $$(echo $(sample_args))
+	@#env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go sample  $$(echo $(sample_args))
+
+.PHONY: echo-process-args
+echo-process-args:
+	@echo $(process_args)
+	@echo $(process_args) | pbcopy
 
 .PHONY: run-process
 run-process:
-	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go process --listbank=bca,bni,mandiri,bri,danamon --from=$$(date -j -v -3d "+%Y-%m-%d") --to=$$(date -j "+%Y-%m-%d") -d=false
+	@echo "go run main.go process $(process_args)"
+	@go build .
+	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) ./simple-reconciliation-service process $$(echo $(process_args))
+#	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go process $$(echo $(process_args))
 
 .PHONY: go-version
 go-version:

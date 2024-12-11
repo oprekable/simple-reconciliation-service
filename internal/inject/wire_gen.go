@@ -29,13 +29,13 @@ import (
 
 // Injectors from inject.go:
 
-func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz cconfig.TimeZone, errType []core.ErrorType) (*appcontext.AppContext, func(), error) {
+func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz cconfig.TimeZone, errType []core.ErrorType, isShowLog clogger.IsShowLog) (*appcontext.AppContext, func(), error) {
 	configPaths := _wireConfigPathsValue
 	config, err := cconfig.NewConfig(ctx, embedFS, configPaths, appName, tz)
 	if err != nil {
 		return nil, nil, err
 	}
-	logger := clogger.ProviderLogger(ctx, config)
+	logger := clogger.ProviderLogger(ctx, isShowLog)
 	erType := cerror.ProvideErType(errType)
 	cerrorError := cerror.NewError(erType)
 	dbSqlite, err := csqlite.NewDBSqlite(config, logger)

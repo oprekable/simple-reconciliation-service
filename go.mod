@@ -1,6 +1,6 @@
 module simple-reconciliation-service
 
-go 1.22.6
+go 1.22.7
 
 require (
 	github.com/XSAM/otelsql v0.35.0
@@ -9,6 +9,7 @@ require (
 	github.com/creasty/defaults v1.8.0
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/driftprogramming/godotenv v1.1.0
+	github.com/dustin/go-humanize v1.0.1
 	github.com/golangci/golangci-lint v1.62.0
 	github.com/google/wire v0.6.0
 	github.com/jmoiron/sqlx v1.4.0
@@ -72,7 +73,6 @@ require (
 	github.com/daixiang0/gci v0.13.5 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/denis-tingaikin/go-header v0.5.0 // indirect
-	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/ettle/strcase v0.2.0 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect

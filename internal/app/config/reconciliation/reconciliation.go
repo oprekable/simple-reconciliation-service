@@ -12,7 +12,7 @@ type Reconciliation struct {
 	ReportTRXPath                  string    `default:"-"    mapstructure:"report_trx_path"`
 	ListBank                       []string  `default:"-"    mapstructure:"list_bank"`
 	TotalData                      int64     `default:"-"    mapstructure:"total_data"`
-	PercentageMatch                int       `default:"-"    mapstructure:"percentage_match"`
+	PercentageMatch                int       `default:"100"  mapstructure:"percentage_match"`
 	NumberWorker                   int       `default:"10"   mapstructure:"number_worker"`
 	IsDeleteCurrentSampleDirectory bool      `default:"true" mapstructure:"is_delete_current_sample_directory"`
 }

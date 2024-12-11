@@ -39,6 +39,9 @@ const (
 	FlagIsDeleteCurrentSampleDirectory       string = "deleteoldfile"
 	FlagIsDeleteCurrentSampleDirectoryShort  string = "d"
 	FlagIsDeleteCurrentSampleDirectoryUsage  string = `delete old files`
+	FlagIsVerbose                            string = "showlog"
+	FlagIsVerboseShort                       string = "o"
+	FlagIsVerboseUsage                       string = `show logs`
 )
 
 var EmbedFS *embed.FS
@@ -62,3 +65,4 @@ var DefaultTotalDataSampleToGenerate int64 = 1000
 var FlagPercentageMatchSampleToGenerateValue int
 var DefaultPercentageMatchSampleToGenerate = 100
 var FlagIsDeleteCurrentSampleDirectoryValue bool
+var FlagIsVerboseValue bool

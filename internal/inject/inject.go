@@ -8,6 +8,7 @@ import (
 	"simple-reconciliation-service/internal/app/appcontext"
 	"simple-reconciliation-service/internal/app/component"
 	"simple-reconciliation-service/internal/app/component/cconfig"
+	"simple-reconciliation-service/internal/app/component/clogger"
 	"simple-reconciliation-service/internal/app/err/core"
 	"simple-reconciliation-service/internal/app/repository"
 	"simple-reconciliation-service/internal/app/server"
@@ -24,6 +25,7 @@ func WireApp(
 	appName cconfig.AppName,
 	tz cconfig.TimeZone,
 	errType []core.ErrorType,
+	isShowLog clogger.IsShowLog,
 ) (*appcontext.AppContext, func(), error) {
 	wire.Build(
 		component.Set,

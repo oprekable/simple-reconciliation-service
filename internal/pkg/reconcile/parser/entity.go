@@ -1,8 +1,10 @@
 package parser
 
 type TrxData struct {
-	SystemTrx []*SystemTrxData
-	BankTrx   []*BankTrxData
+	SystemTrx       []*SystemTrxData
+	BankTrx         []*BankTrxData
+	MinSystemAmount float64
+	MaxSystemAmount float64
 }
 
 type BankTrxData struct {

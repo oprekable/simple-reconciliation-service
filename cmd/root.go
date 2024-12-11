@@ -113,6 +113,14 @@ func init() {
 		true,
 		root.FlagIsDeleteCurrentSampleDirectoryUsage,
 	)
+
+	rootCmd.PersistentFlags().BoolVarP(
+		&root.FlagIsVerboseValue,
+		root.FlagIsVerbose,
+		root.FlagIsVerboseShort,
+		false,
+		root.FlagIsVerboseUsage,
+	)
 }
 
 func Execute(embedFS *embed.FS) {

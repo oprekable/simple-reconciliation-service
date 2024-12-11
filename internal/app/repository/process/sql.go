@@ -51,7 +51,8 @@ CREATE TABLE IF NOT EXISTS system_trx (
 	TransactionTime DATETIME,
 	FilePath TEXT
 );
-;
+
+CREATE INDEX IF NOT EXISTS system_trx_Amount_index ON system_trx (Amount);
 `
 	QueryCreateTableBankTrx = `
 -- QueryCreateTableBankTrx
@@ -64,7 +65,7 @@ CREATE TABLE IF NOT EXISTS bank_trx (
 	FilePath TEXT
 );
 
-CREATE INDEX IF NOT EXISTS bank_trx_Date_Type_Amount_index ON bank_trx (Date, Type, Amount);
+CREATE INDEX IF NOT EXISTS bank_trx_Date_Type_Amount_UniqueIdentifier_index ON bank_trx (Date, Type, Amount, UniqueIdentifier);
 `
 	QueryCreateTableReconciliationMap = `
 -- QueryCreateTableReconciliationMap
@@ -73,8 +74,7 @@ CREATE TABLE IF NOT EXISTS reconciliation_map (
 	UniqueIdentifier TEXT
 );
 
-CREATE INDEX IF NOT EXISTS reconciliation_map_TrxID_index ON reconciliation_map (TrxID);
-CREATE INDEX IF NOT EXISTS reconciliation_map_UniqueIdentifier_index ON reconciliation_map (UniqueIdentifier);
+CREATE UNIQUE INDEX IF NOT EXISTS reconciliation_map_UniqueIdentifier_index ON reconciliation_map (UniqueIdentifier);
 `
 	QueryInsertTableSystemTrx = `
 -- QueryInsertTableSystemTrx
@@ -109,46 +109,62 @@ INSERT OR IGNORE INTO bank_trx (UniqueIdentifier, Date, Type, FilePath, Bank, Am
 
 	QueryInsertTableReconciliationMap = `
 -- QueryInsertTableReconciliationMap
-WITH base_search AS (
+WITH main_data AS (
     SELECT
-        st.TrxID
-         , bt.UniqueIdentifier
-         , st.Amount
-         , st.Type
-         , bt.Bank
-         , bt.Date
-         , st.TransactionTime
-    FROM
-        arguments a
-       , system_trx st
-    INNER JOIN bank_trx bt ON
-        bt.Date = DATE(st.TransactionTime)
-        AND bt.Type = st.Type
-        AND bt.Amount = st.Amount
+        CAST(? AS FLOAT) AS MinAmount
+        , CAST(? AS FLOAT) AS MaxAmount
 )
-, with_counter AS (
-    SELECT
-        ROW_NUMBER() OVER (PARTITION BY bs.Date, bs.Amount, bs.Type, bs.TrxID ORDER BY bs.UniqueIdentifier) AS r_system
-         , ROW_NUMBER() OVER (PARTITION BY bs.Date, bs.Amount, bs.Type, bs.UniqueIdentifier ORDER BY bs.TrxID) AS r_bank
-         , bs.*
-    FROM base_search bs
-)
-, matched_trx AS (
-    SELECT
-        wc.*
-    FROM with_counter wc
-    WHERE wc.r_system = wc.r_bank
-    ORDER BY wc.Date, wc.Amount, wc.TrxID, wc.UniqueIdentifier, wc.TransactionTime
-)
-INSERT INTO reconciliation_map(
+INSERT OR IGNORE INTO reconciliation_map(
     TrxID,
     UniqueIdentifier
 )
 SELECT
-    mt.TrxID,
-    mt.UniqueIdentifier
-FROM matched_trx mt
-WHERE NOT EXISTS (SELECT 1 FROM reconciliation_map LIMIT 1)
-;
+    TrxID
+     , UniqueIdentifier
+FROM (
+         SELECT
+             TRUE
+              , ROW_NUMBER() OVER (PARTITION BY st.TrxID ORDER BY bt.UniqueIdentifier) AS r_system
+              , ROW_NUMBER() OVER (PARTITION BY bt.UniqueIdentifier ORDER BY st.TrxID) AS r_bank
+              , st.TrxID
+              , bt.UniqueIdentifier
+         FROM main_data md
+        INNER JOIN system_trx st ON st.Amount >= md.MinAmount AND st.Amount < md.MaxAmount
+        INNER JOIN bank_trx bt ON
+            bt.Date = DATE(st.TransactionTime)
+            AND bt.Type = st.Type
+            AND bt.Amount = st.Amount
+     )
+WHERE r_system = r_bank;
+`
+	QueryGetReconciliationSummary = `
+-- QueryGetReconciliationSummary
+SELECT
+    main_data.total_system_trx
+    , main_data.total_matched_trx
+    , (main_data.total_system_trx - main_data.total_matched_trx) AS total_not_matched_trx
+    , main_data.sum_system_trx
+    , main_data.sum_matched_trx
+    , (main_data.sum_system_trx - main_data.sum_matched_trx) AS sum_discrepancies_trx
+FROM (
+    SELECT
+        COUNT(*) AS total_system_trx
+        , SUM(
+            CASE
+                WHEN rm.UniqueIdentifier IS NOT NULL then 1
+                ELSE 0
+            END
+        ) AS total_matched_trx
+        , SUM(st.Amount) AS sum_system_trx
+        , SUM(
+        CASE
+            WHEN rm.UniqueIdentifier IS NOT NULL then st.Amount
+            ELSE 0
+        END
+        ) AS sum_matched_trx
+    FROM system_trx st
+    LEFT JOIN reconciliation_map rm ON rm.TrxID = st.TrxID
+) main_data
+
 `
 )

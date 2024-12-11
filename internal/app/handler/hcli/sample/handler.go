@@ -8,6 +8,7 @@ import (
 	"simple-reconciliation-service/internal/app/component"
 	"simple-reconciliation-service/internal/app/repository"
 	"simple-reconciliation-service/internal/app/service"
+	"simple-reconciliation-service/internal/pkg/utils/memstats"
 	"strconv"
 	"strings"
 
@@ -64,10 +65,6 @@ func (h *Handler) Exec() (err error) {
 			root.FlagBankTRXPathValue,
 		},
 		{
-			fmt.Sprintf("-%s --%s", root.FlagReportTRXPathShort, root.FlagReportTRXPath),
-			root.FlagReportTRXPathValue,
-		},
-		{
 			fmt.Sprintf("-%s --%s", root.FlagListBankShort, root.FlagListBank),
 			strings.Join(root.FlagListBankValue, ","),
 		},
@@ -82,6 +79,10 @@ func (h *Handler) Exec() (err error) {
 		{
 			fmt.Sprintf("-%s --%s", root.FlagIsDeleteCurrentSampleDirectoryShort, root.FlagIsDeleteCurrentSampleDirectory),
 			strconv.FormatBool(root.FlagIsDeleteCurrentSampleDirectoryValue),
+		},
+		{
+			fmt.Sprintf("-%s --%s", root.FlagIsVerboseShort, root.FlagIsVerbose),
+			strconv.FormatBool(root.FlagIsVerboseValue),
 		},
 	}
 
@@ -122,6 +123,7 @@ func (h *Handler) Exec() (err error) {
 	fmt.Println("")
 
 	bar.Describe("[cyan]Done")
+	memstats.PrintMemoryStats()
 
 	return
 }

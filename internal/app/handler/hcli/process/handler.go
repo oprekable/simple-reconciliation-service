@@ -8,8 +8,11 @@ import (
 	"simple-reconciliation-service/internal/app/component"
 	"simple-reconciliation-service/internal/app/repository"
 	"simple-reconciliation-service/internal/app/service"
+	"simple-reconciliation-service/internal/pkg/utils/memstats"
 	"strconv"
 	"strings"
+
+	"github.com/dustin/go-humanize"
 
 	"github.com/k0kubun/go-ansi"
 	"github.com/olekukonko/tablewriter"
@@ -76,6 +79,10 @@ func (h *Handler) Exec() error {
 			fmt.Sprintf("-%s --%s", root.FlagIsDeleteCurrentSampleDirectoryShort, root.FlagIsDeleteCurrentSampleDirectory),
 			strconv.FormatBool(root.FlagIsDeleteCurrentSampleDirectoryValue),
 		},
+		{
+			fmt.Sprintf("-%s --%s", root.FlagIsVerboseShort, root.FlagIsVerbose),
+			strconv.FormatBool(root.FlagIsVerboseValue),
+		},
 	}
 
 	tableArgs := tablewriter.NewWriter(os.Stdout)
@@ -92,12 +99,12 @@ func (h *Handler) Exec() error {
 	}
 
 	dataDesc := [][]string{
-		{"Total number of transactions processed", strconv.FormatInt(summary.TotalProcessedSystemTrx, 10)},
-		{"Total number of matched transactions", strconv.FormatInt(summary.TotalMatchedSystemTrx, 10)},
-		{"Total number of not matched transactions", strconv.FormatInt(summary.TotalNotMatchedSystemTrx, 10)},
-		{"Sum amount all transactions", fmt.Sprintf("%f", summary.SumAmountProcessedSystemTrx)},
-		{"Sum amount matched transactions", fmt.Sprintf("%f", summary.SumAmountMatchedSystemTrx)},
-		{"Total discrepancies", fmt.Sprintf("%f", summary.SumAmountDiscrepanciesSystemTrx)},
+		{"Total number of transactions processed", humanize.FormatInteger("#.###,", int(summary.TotalProcessedSystemTrx))},
+		{"Total number of matched transactions", humanize.FormatInteger("#.###,", int(summary.TotalMatchedSystemTrx))},
+		{"Total number of not matched transactions", humanize.FormatInteger("#.###,", int(summary.TotalNotMatchedSystemTrx))},
+		{"Sum amount all transactions", humanize.FormatFloat("#.###,##", summary.SumAmountProcessedSystemTrx)},
+		{"Sum amount matched transactions", humanize.FormatFloat("#.###,##", summary.SumAmountMatchedSystemTrx)},
+		{"Total discrepancies", humanize.FormatFloat("#.###,##", summary.SumAmountDiscrepanciesSystemTrx)},
 	}
 
 	fmt.Println("")
@@ -136,6 +143,7 @@ func (h *Handler) Exec() error {
 	fmt.Println("")
 
 	bar.Describe("[cyan]Done")
+	memstats.PrintMemoryStats()
 
 	return nil
 }

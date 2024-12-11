@@ -16,7 +16,8 @@ type Repository interface {
 
 	ImportSystemTrx(ctx context.Context, data []*parser.SystemTrxData) (err error)
 	ImportBankTrx(ctx context.Context, data []*parser.BankTrxData) (err error)
-	GenerateReconciliationMap(ctx context.Context) (err error)
+	GenerateReconciliationMap(ctx context.Context, minAmount float64, maxAmount float64) (err error)
+	GetReconciliationSummary(ctx context.Context) (returnData ReconciliationSummary, err error)
 	Post(ctx context.Context) (err error)
 	Close() (err error)
 }

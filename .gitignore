@@ -24,3 +24,5 @@ vendor/
 .go-cache/
 
 /dist
+/simple-reconciliation-service
+/*.db

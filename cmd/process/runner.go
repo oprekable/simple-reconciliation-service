@@ -3,10 +3,12 @@ package process
 import (
 	"simple-reconciliation-service/cmd/root"
 	"simple-reconciliation-service/internal/app/component/cconfig"
+	"simple-reconciliation-service/internal/app/component/clogger"
 	"simple-reconciliation-service/internal/app/err"
 	"simple-reconciliation-service/internal/inject"
 	"simple-reconciliation-service/internal/pkg/utils/atexit"
 	"simple-reconciliation-service/variable"
+	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -23,6 +25,7 @@ func Runner(cmd *cobra.Command, _ []string) (er error) {
 		cconfig.AppName(variable.AppName),
 		cconfig.TimeZone(root.FlagTZValue),
 		err.RegisteredErrorType,
+		clogger.IsShowLog(root.FlagIsVerboseValue),
 	)
 
 	if er != nil {
@@ -35,6 +38,7 @@ func Runner(cmd *cobra.Command, _ []string) (er error) {
 	app.GetComponents().Config.Reconciliation.ReportTRXPath = root.FlagReportTRXPathValue
 	app.GetComponents().Config.Reconciliation.ListBank = root.FlagListBankValue
 	app.GetComponents().Config.Reconciliation.IsDeleteCurrentSampleDirectory = root.FlagIsDeleteCurrentSampleDirectoryValue
+	app.GetComponents().Config.IsShowLog = strconv.FormatBool(root.FlagIsVerboseValue)
 
 	toDate, er := time.Parse("2006-01-02", root.FlagToDateValue)
 	if er != nil {
