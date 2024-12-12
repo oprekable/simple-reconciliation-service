@@ -1,29 +1,26 @@
 name: SonarQube Analysis
-
 on:
+  # Trigger analysis when pushing to your main branches, and when creating a pull request.
   push:
     branches:
-      - main  # Change this to the branch you want to analyze
+      - main
+      - master
+      - develop
+      - 'releases/**'
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   sonarqube:
-    name: SonarQube Scan
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/checkout@v4
         with:
-          go-version: 1.22.7  # Change this to your desired Go version
-
-      - name: Build Go project
-        run: go build
-
-      - name: Run SonarQube Scanner
-        uses: sonarsource/sonarqube-scan-action@v4
+          # Disabling shallow clones is recommended for improving the relevancy of reporting
+          fetch-depth: 0
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@v4 # Ex: v4.1.0, See the latest version at https://github.com/marketplace/actions/official-sonarqube-scan
         with:
-          projectBaseDir: ./  # Set this to the project's base directory
-          sonarToken: ${{ secrets.SONAR_TOKEN }}
+          projectBaseDir: ./
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
