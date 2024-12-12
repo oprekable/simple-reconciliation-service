@@ -51,11 +51,6 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 		return er
 	}
 
-	er = d.db.Ping()
-	if er != nil {
-		return er
-	}
-
 	_, err = hunch.Waterfall(
 		ctx,
 		func(c context.Context, _ interface{}) (interface{}, error) {

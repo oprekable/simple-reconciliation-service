@@ -42,6 +42,32 @@ func NewSvc(
 	}
 }
 
+func (s *Svc) parseSystemTrxFile(ctx context.Context, afs afero.Fs, filePath string) (returnData []*parser.SystemTrxData, err error) {
+	var f afero.File
+	f, err = afs.Open(filePath)
+
+	defer func() {
+		if f != nil {
+			_ = f.Close()
+		}
+
+		log.Err(ctx, "[process.NewSvc] parseSystemTrxFiles fs.Open - '"+filePath+"'", err)
+	}()
+
+	var systemParser *parser.DefaultSystem
+	systemParser, err = parser.NewDefaultSystem(
+		csv.NewReader(f),
+		true,
+	)
+
+	if err != nil {
+		return
+	}
+
+	returnData, err = systemParser.ToSystemTrxData(ctx, filePath)
+	return
+}
+
 func (s *Svc) parseSystemTrxFiles(ctx context.Context, afs afero.Fs) (returnData []*parser.SystemTrxData, err error) {
 	var filePathSystemTrx []string
 	cleanPath := filepath.Clean(s.comp.Config.Data.Reconciliation.SystemTRXPath)
@@ -62,38 +88,8 @@ func (s *Svc) parseSystemTrxFiles(ctx context.Context, afs afero.Fs) (returnData
 	}
 
 	parallel.ForEach(filePathSystemTrx, func(item string, _ int) {
-		f, er := afs.Open(item)
-		log.Err(ctx, "[process.NewSvc] parseSystemTrxFiles fs.Open - '"+item+"'", er)
-		if er != nil {
-			if f != nil {
-				_ = f.Close()
-			}
-			return
-		}
-		systemParser, er := parser.NewDefaultSystem(
-			csv.NewReader(f),
-			true,
-		)
-		log.Err(ctx, "[process.NewSvc] parseSystemTrxFiles - '"+item+"' parse", er)
-		if er != nil {
-			if f != nil {
-				_ = f.Close()
-			}
-			return
-		}
-		data, er := systemParser.ToSystemTrxData(ctx, item)
-		log.Err(ctx, "[process.NewSvc] parseSystemTrxFiles parse.ToSystemTrxData", er)
-		if er != nil {
-			if f != nil {
-				_ = f.Close()
-			}
-			return
-		}
-
+		data, _ := s.parseSystemTrxFile(ctx, afs, item)
 		returnData = append(returnData, data...)
-		if f != nil {
-			_ = f.Close()
-		}
 	})
 
 	return
