@@ -22,5 +22,8 @@ jobs:
         uses: sonarsource/sonarqube-scan-action@v4 # Ex: v4.1.0, See the latest version at https://github.com/marketplace/actions/official-sonarqube-scan
         with:
           projectBaseDir: ./
+          args: >
+            -Dsonar.organization=oprekable
+            -Dsonar.projectKey=oprekable_simple-reconciliation-service
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
