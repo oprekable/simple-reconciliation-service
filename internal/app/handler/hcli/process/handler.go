@@ -50,37 +50,38 @@ func (h *Handler) Exec() error {
 			BarEnd:        "]",
 		}))
 
+	formatText := "-%s --%s"
 	args := [][]string{
 		{
-			fmt.Sprintf("-%s --%s", root.FlagFromDateShort, root.FlagFromDate),
+			fmt.Sprintf(formatText, root.FlagFromDateShort, root.FlagFromDate),
 			root.FlagFromDateValue,
 		},
 		{
-			fmt.Sprintf("-%s --%s", root.FlagToDateShort, root.FlagToDate),
+			fmt.Sprintf(formatText, root.FlagToDateShort, root.FlagToDate),
 			root.FlagToDateValue,
 		},
 		{
-			fmt.Sprintf("-%s --%s", root.FlagSystemTRXPathShort, root.FlagSystemTRXPath),
+			fmt.Sprintf(formatText, root.FlagSystemTRXPathShort, root.FlagSystemTRXPath),
 			root.FlagSystemTRXPathValue,
 		},
 		{
-			fmt.Sprintf("-%s --%s", root.FlagBankTRXPathShort, root.FlagBankTRXPath),
+			fmt.Sprintf(formatText, root.FlagBankTRXPathShort, root.FlagBankTRXPath),
 			root.FlagBankTRXPathValue,
 		},
 		{
-			fmt.Sprintf("-%s --%s", root.FlagReportTRXPathShort, root.FlagReportTRXPath),
+			fmt.Sprintf(formatText, root.FlagReportTRXPathShort, root.FlagReportTRXPath),
 			root.FlagReportTRXPathValue,
 		},
 		{
-			fmt.Sprintf("-%s --%s", root.FlagListBankShort, root.FlagListBank),
+			fmt.Sprintf(formatText, root.FlagListBankShort, root.FlagListBank),
 			strings.Join(root.FlagListBankValue, ","),
 		},
 		{
-			fmt.Sprintf("-%s --%s", root.FlagIsDeleteCurrentSampleDirectoryShort, root.FlagIsDeleteCurrentSampleDirectory),
+			fmt.Sprintf(formatText, root.FlagIsDeleteCurrentSampleDirectoryShort, root.FlagIsDeleteCurrentSampleDirectory),
 			strconv.FormatBool(root.FlagIsDeleteCurrentSampleDirectoryValue),
 		},
 		{
-			fmt.Sprintf("-%s --%s", root.FlagIsVerboseShort, root.FlagIsVerbose),
+			fmt.Sprintf(formatText, root.FlagIsVerboseShort, root.FlagIsVerbose),
 			strconv.FormatBool(root.FlagIsVerboseValue),
 		},
 	}
@@ -98,13 +99,16 @@ func (h *Handler) Exec() error {
 		return err
 	}
 
+	numberIntegerFormat := "#.###,"
+	numberFloatFormat := "#.###,##"
+
 	dataDesc := [][]string{
-		{"Total number of transactions processed", humanize.FormatInteger("#.###,", int(summary.TotalProcessedSystemTrx))},
-		{"Total number of matched transactions", humanize.FormatInteger("#.###,", int(summary.TotalMatchedSystemTrx))},
-		{"Total number of not matched transactions", humanize.FormatInteger("#.###,", int(summary.TotalNotMatchedSystemTrx))},
-		{"Sum amount all transactions", humanize.FormatFloat("#.###,##", summary.SumAmountProcessedSystemTrx)},
-		{"Sum amount matched transactions", humanize.FormatFloat("#.###,##", summary.SumAmountMatchedSystemTrx)},
-		{"Total discrepancies", humanize.FormatFloat("#.###,##", summary.SumAmountDiscrepanciesSystemTrx)},
+		{"Total number of transactions processed", humanize.FormatInteger(numberIntegerFormat, int(summary.TotalProcessedSystemTrx))},
+		{"Total number of matched transactions", humanize.FormatInteger(numberIntegerFormat, int(summary.TotalMatchedSystemTrx))},
+		{"Total number of not matched transactions", humanize.FormatInteger(numberIntegerFormat, int(summary.TotalNotMatchedSystemTrx))},
+		{"Sum amount all transactions", humanize.FormatFloat(numberFloatFormat, summary.SumAmountProcessedSystemTrx)},
+		{"Sum amount matched transactions", humanize.FormatFloat(numberFloatFormat, summary.SumAmountMatchedSystemTrx)},
+		{"Total discrepancies", humanize.FormatFloat(numberFloatFormat, summary.SumAmountDiscrepanciesSystemTrx)},
 	}
 
 	fmt.Println("")

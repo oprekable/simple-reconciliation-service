@@ -95,20 +95,11 @@ func initMachineID() (machineID string) {
 }
 
 func initMachineIP() (machineIPs []string) {
-	var er error
 	var netInterfaces []net.Interface
-	if netInterfaces, er = net.Interfaces(); er != nil {
-		return
-	}
-
+	netInterfaces, _ = net.Interfaces()
 	for _, i := range netInterfaces {
 		var adders []net.Addr
-		var e error
-
-		if adders, e = i.Addrs(); e != nil {
-			fmt.Printf("failed to load machine IP information %v\n", e)
-			continue
-		}
+		adders, _ = i.Addrs()
 
 		for _, addr := range adders {
 			var ip net.IP

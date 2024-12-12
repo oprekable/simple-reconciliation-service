@@ -47,89 +47,62 @@ func NewDB(
 func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
 	_, err = hunch.Waterfall(
 		ctx,
-		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				tx = i.(*sql.Tx)
-			}
-
-			return nil, nil
-		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
 			if d.stmtDropTableArguments == nil {
-				return d.db.PrepareContext(c, QueryDropTableArguments)
+				d.stmtDropTableArguments, e = d.db.PrepareContext(c, QueryDropTableArguments)
 			}
 
-			return nil, nil
+			return nil, e
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				d.stmtDropTableArguments = i.(*sql.Stmt)
-			}
-
 			return tx.StmtContext(c, d.stmtDropTableArguments).ExecContext( //nolint:sqlclosecheck
 				c,
 			)
 		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
 			if d.stmtDropTableBanks == nil {
-				return d.db.PrepareContext(c, QueryDropTableBanks)
+				d.stmtDropTableBanks, e = d.db.PrepareContext(c, QueryDropTableBanks)
 			}
 
-			return nil, nil
+			return nil, e
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				d.stmtDropTableBanks = i.(*sql.Stmt)
-			}
-
 			return tx.StmtContext(c, d.stmtDropTableBanks).ExecContext( //nolint:sqlclosecheck
 				c,
 			)
 		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
 			if d.stmtDropTableSystemTrx == nil {
-				return d.db.PrepareContext(c, QueryDropTableSystemTrx)
+				d.stmtDropTableSystemTrx, e = d.db.PrepareContext(c, QueryDropTableSystemTrx)
 			}
 
-			return nil, nil
+			return nil, e
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				d.stmtDropTableSystemTrx = i.(*sql.Stmt)
-			}
-
 			return tx.StmtContext(c, d.stmtDropTableSystemTrx).ExecContext( //nolint:sqlclosecheck
 				c,
 			)
 		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
 			if d.stmtDropTableBankTrx == nil {
-				return d.db.PrepareContext(c, QueryDropTableBankTrx)
+				d.stmtDropTableBankTrx, e = d.db.PrepareContext(c, QueryDropTableBankTrx)
 			}
 
-			return nil, nil
+			return nil, e
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				d.stmtDropTableBankTrx = i.(*sql.Stmt)
-			}
-
 			return tx.StmtContext(c, d.stmtDropTableBankTrx).ExecContext( //nolint:sqlclosecheck
 				c,
 			)
 		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
 			if d.stmtDropTableReconciliationMap == nil {
-				return d.db.PrepareContext(c, QueryDropTableReconciliationMap)
+				d.stmtDropTableReconciliationMap, e = d.db.PrepareContext(c, QueryDropTableReconciliationMap)
 			}
 
-			return nil, nil
+			return nil, e
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				d.stmtDropTableReconciliationMap = i.(*sql.Stmt)
-			}
-
 			return tx.StmtContext(c, d.stmtDropTableReconciliationMap).ExecContext( //nolint:sqlclosecheck
 				c,
 			)
@@ -163,36 +136,28 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 		func(c context.Context, _ interface{}) (interface{}, error) {
 			return nil, d.dropTables(c, tx)
 		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
 			if d.stmtCreateTableArguments == nil {
-				return d.db.PrepareContext(c, QueryCreateTableArguments)
+				d.stmtCreateTableArguments, e = d.db.PrepareContext(c, QueryCreateTableArguments)
 			}
 
-			return nil, nil
+			return nil, e
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				d.stmtCreateTableArguments = i.(*sql.Stmt)
-			}
-
 			return tx.StmtContext(c, d.stmtCreateTableArguments).ExecContext( //nolint:sqlclosecheck
 				c,
 				startDate.Format("2006-01-02"),
 				toDate.Format("2006-01-02"),
 			)
 		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
 			if d.stmtCreateTableBanks == nil {
-				return d.db.PrepareContext(c, QueryCreateTableBanks)
+				d.stmtCreateTableBanks, e = d.db.PrepareContext(c, QueryCreateTableBanks)
 			}
 
-			return nil, nil
+			return nil, e
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				d.stmtCreateTableBanks = i.(*sql.Stmt)
-			}
-
 			b := new(strings.Builder)
 			err := json.NewEncoder(b).Encode(listBank)
 			if err != nil {
@@ -204,50 +169,38 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 				b.String(),
 			)
 		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
 			if d.stmtCreateTableSystemTrx == nil {
-				return d.db.PrepareContext(c, QueryCreateTableSystemTrx)
+				d.stmtCreateTableSystemTrx, e = d.db.PrepareContext(c, QueryCreateTableSystemTrx)
 			}
 
-			return nil, nil
+			return nil, e
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				d.stmtCreateTableSystemTrx = i.(*sql.Stmt)
-			}
-
 			return tx.StmtContext(c, d.stmtCreateTableSystemTrx).ExecContext( //nolint:sqlclosecheck
 				c,
 			)
 		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
 			if d.stmtCreateTableBankTrx == nil {
-				return d.db.PrepareContext(c, QueryCreateTableBankTrx)
+				d.stmtCreateTableBankTrx, e = d.db.PrepareContext(c, QueryCreateTableBankTrx)
 			}
 
-			return nil, nil
+			return nil, e
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				d.stmtCreateTableBankTrx = i.(*sql.Stmt)
-			}
-
 			return tx.StmtContext(c, d.stmtCreateTableBankTrx).ExecContext( //nolint:sqlclosecheck
 				c,
 			)
 		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
 			if d.stmtCreateTableReconciliationMap == nil {
-				return d.db.PrepareContext(c, QueryCreateTableReconciliationMap)
+				d.stmtCreateTableReconciliationMap, e = d.db.PrepareContext(c, QueryCreateTableReconciliationMap)
 			}
 
-			return nil, nil
+			return nil, e
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				d.stmtCreateTableReconciliationMap = i.(*sql.Stmt)
-			}
-
 			return tx.StmtContext(c, d.stmtCreateTableReconciliationMap).ExecContext( //nolint:sqlclosecheck
 				c,
 			)
@@ -290,18 +243,14 @@ func (d *DB) ImportSystemTrx(ctx context.Context, data []*parser.SystemTrxData) 
 
 			return nil, nil
 		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
 			if d.stmtInsertTableSystemTrx == nil {
-				return d.db.PrepareContext(c, QueryInsertTableSystemTrx)
+				d.stmtInsertTableSystemTrx, e = d.db.PrepareContext(c, QueryInsertTableSystemTrx)
 			}
 
-			return nil, nil
+			return nil, e
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				d.stmtInsertTableSystemTrx = i.(*sql.Stmt)
-			}
-
 			return tx.StmtContext(c, d.stmtInsertTableSystemTrx).ExecContext( //nolint:sqlclosecheck
 				c,
 				jsonData,
@@ -345,18 +294,14 @@ func (d *DB) ImportBankTrx(ctx context.Context, data []*parser.BankTrxData) (err
 
 			return nil, nil
 		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
 			if d.stmtInsertTableBankTrx == nil {
-				return d.db.PrepareContext(c, QueryInsertTableBankTrx)
+				d.stmtInsertTableBankTrx, e = d.db.PrepareContext(c, QueryInsertTableBankTrx)
 			}
 
-			return nil, nil
+			return nil, e
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				d.stmtInsertTableBankTrx = i.(*sql.Stmt)
-			}
-
 			return tx.StmtContext(c, d.stmtInsertTableBankTrx).ExecContext( //nolint:sqlclosecheck
 				c,
 				jsonData,
@@ -389,18 +334,14 @@ func (d *DB) GenerateReconciliationMap(ctx context.Context, minAmount float64, m
 
 	_, err = hunch.Waterfall(
 		ctx,
-		func(c context.Context, _ interface{}) (interface{}, error) {
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
 			if d.stmtInsertTableReconciliationMap == nil {
-				return d.db.PrepareContext(c, QueryInsertTableReconciliationMap)
+				d.stmtInsertTableReconciliationMap, e = d.db.PrepareContext(c, QueryInsertTableReconciliationMap)
 			}
 
-			return nil, nil
+			return nil, e
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				d.stmtInsertTableReconciliationMap = i.(*sql.Stmt)
-			}
-
 			return tx.StmtContext(c, d.stmtInsertTableReconciliationMap).ExecContext( //nolint:sqlclosecheck
 				c,
 				minAmount,
@@ -429,18 +370,14 @@ func (d *DB) GetReconciliationSummary(ctx context.Context) (returnData Reconcili
 
 	_, err = hunch.Waterfall(
 		ctx,
-		func(c context.Context, _ interface{}) (interface{}, error) {
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
 			if d.stmtGetReconciliationSummary == nil {
-				return d.db.PrepareContext(c, QueryGetReconciliationSummary)
+				d.stmtGetReconciliationSummary, e = d.db.PrepareContext(c, QueryGetReconciliationSummary)
 			}
 
-			return nil, nil
+			return nil, e
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				d.stmtGetReconciliationSummary = i.(*sql.Stmt)
-			}
-
 			return d.stmtGetReconciliationSummary.QueryContext( //nolint:sqlclosecheck
 				c,
 			)
