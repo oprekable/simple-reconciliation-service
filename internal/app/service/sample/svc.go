@@ -103,58 +103,61 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 			bankTrxData := make(map[string][]interface{})
 
 			lo.ForEach(trxData, func(data sample.TrxData, _ int) {
-				if data.IsSystemTrx {
-					item := SystemTrxData{
-						TrxID:           data.TrxID,
-						Type:            data.Type,
-						TransactionTime: data.TransactionTime,
-						Amount:          data.Amount,
-					}
-
-					systemTrxData = append(systemTrxData, item)
-				}
-
-				if data.IsBankTrx || (!data.IsBankTrx && !data.IsSystemTrx) {
-					bank := strings.ToLower(data.Bank)
-					if _, ok := bankTrxData[bank]; !ok {
-						bankTrxData[bank] = make([]interface{}, 0, len(trxData))
-					}
-
-					multiplier := float64(1)
-					if data.Type == DEBIT {
-						multiplier = float64(-1)
-					}
-
-					switch strings.ToUpper(bank) {
-					case "BCA":
-						{
-							item := BCABankTrxData{
-								BCAUniqueIdentifier: data.UniqueIdentifier,
-								BCADate:             data.Date,
-								BCAAmount:           data.Amount * multiplier,
-							}
-
-							bankTrxData[bank] = append(bankTrxData[bank], item)
+				switch {
+				case data.IsSystemTrx:
+					{
+						item := SystemTrxData{
+							TrxID:           data.TrxID,
+							Type:            data.Type,
+							TransactionTime: data.TransactionTime,
+							Amount:          data.Amount,
 						}
-					case "BNI":
-						{
-							item := BNIBankTrxData{
-								BNIUniqueIdentifier: data.UniqueIdentifier,
-								BNIDate:             data.Date,
-								BNIAmount:           data.Amount * multiplier,
-							}
 
-							bankTrxData[bank] = append(bankTrxData[bank], item)
+						systemTrxData = append(systemTrxData, item)
+					}
+				case data.IsBankTrx || (!data.IsBankTrx && !data.IsSystemTrx):
+					{
+						bank := strings.ToLower(data.Bank)
+						if _, ok := bankTrxData[bank]; !ok {
+							bankTrxData[bank] = make([]interface{}, 0, len(trxData))
 						}
-					default:
-						{
-							item := DefaultBankTrxData{
-								UniqueIdentifier: data.UniqueIdentifier,
-								Date:             data.Date,
-								Amount:           data.Amount * multiplier,
-							}
 
-							bankTrxData[bank] = append(bankTrxData[bank], item)
+						multiplier := float64(1)
+						if data.Type == DEBIT {
+							multiplier = float64(-1)
+						}
+
+						switch strings.ToUpper(bank) {
+						case "BCA":
+							{
+								item := BCABankTrxData{
+									BCAUniqueIdentifier: data.UniqueIdentifier,
+									BCADate:             data.Date,
+									BCAAmount:           data.Amount * multiplier,
+								}
+
+								bankTrxData[bank] = append(bankTrxData[bank], item)
+							}
+						case "BNI":
+							{
+								item := BNIBankTrxData{
+									BNIUniqueIdentifier: data.UniqueIdentifier,
+									BNIDate:             data.Date,
+									BNIAmount:           data.Amount * multiplier,
+								}
+
+								bankTrxData[bank] = append(bankTrxData[bank], item)
+							}
+						default:
+							{
+								item := DefaultBankTrxData{
+									UniqueIdentifier: data.UniqueIdentifier,
+									Date:             data.Date,
+									Amount:           data.Amount * multiplier,
+								}
+
+								bankTrxData[bank] = append(bankTrxData[bank], item)
+							}
 						}
 					}
 				}
