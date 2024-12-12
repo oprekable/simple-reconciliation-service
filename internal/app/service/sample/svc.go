@@ -36,6 +36,20 @@ func NewSvc(
 	}
 }
 
+func (s *Svc) deleteDirectorySystemTrxBankTrx(ctx context.Context, fs afero.Fs) (err error) {
+	if er := csvhelper.DeleteDirectory(ctx, fs, s.comp.Config.Data.Reconciliation.SystemTRXPath); er != nil {
+		log.Err(ctx, "[sample.NewSvc] DeleteDirectory SystemTRXPath", er)
+		return er
+	}
+
+	if er := csvhelper.DeleteDirectory(ctx, fs, s.comp.Config.Data.Reconciliation.BankTRXPath); er != nil {
+		log.Err(ctx, "[sample.NewSvc] DeleteDirectory BankTRXPath", er)
+		return er
+	}
+
+	return
+}
+
 func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.ProgressBar, isDeleteDirectory bool) (returnSummary Summary, err error) {
 	ctx = s.comp.Logger.GetLogger().With().Str("component", "Sample Service").Ctx(ctx).Logger().WithContext(s.comp.Logger.GetCtx())
 
@@ -53,13 +67,7 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 			progressbarhelper.BarDescribe(bar, "[cyan][1/5] Pre Process Generate Sample...")
 
 			if isDeleteDirectory {
-				if er := csvhelper.DeleteDirectory(c, fs, s.comp.Config.Data.Reconciliation.SystemTRXPath); er != nil {
-					log.Err(c, "[sample.NewSvc] DeleteDirectory SystemTRXPath", er)
-					return nil, er
-				}
-
-				if er := csvhelper.DeleteDirectory(c, fs, s.comp.Config.Data.Reconciliation.BankTRXPath); er != nil {
-					log.Err(c, "[sample.NewSvc] DeleteDirectory BankTRXPath", er)
+				if er := s.deleteDirectorySystemTrxBankTrx(c, fs); er != nil {
 					return nil, er
 				}
 			}
