@@ -84,10 +84,10 @@ func initWorkDirPath() WorkDirPath {
 
 func initMachineID() (machineID string) {
 	var er error
-	machineID = "localhost"
 	if machineID, er = machineid.ID(); er != nil {
 		if machineID, er = os.Hostname(); er != nil {
 			machineID = "localhost"
+			return
 		}
 	}
 

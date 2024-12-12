@@ -35,5 +35,7 @@ func WireApp(
 		appcontext.NewAppContext,
 	)
 
-	return nil, nil, nil
+	return nil, func() {
+		// do nothing
+	}, nil
 }
