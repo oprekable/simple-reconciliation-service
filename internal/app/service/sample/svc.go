@@ -76,23 +76,18 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 			log.Err(c, "[sample.NewSvc] RepoSample.Pre executed", er)
 			return nil, err
 		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
+		func(c context.Context, _ interface{}) (r interface{}, er error) {
 			progressbarhelper.BarDescribe(bar, "[cyan][2/5] Populate Trx Data...")
 
-			r, er := s.repo.RepoSample.GetTrx(
+			trxData, er = s.repo.RepoSample.GetTrx(
 				c,
 			)
 
 			log.Err(c, "[sample.NewSvc] RepoSample.GetTrx executed", er)
-			return r, er
+			return nil, er
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
 			progressbarhelper.BarDescribe(bar, "[cyan][3/5] Post Process Generate Sample...")
-
-			if i != nil {
-				trxData = i.([]sample.TrxData)
-			}
-
 			er := s.repo.RepoSample.Post(
 				c,
 			)
