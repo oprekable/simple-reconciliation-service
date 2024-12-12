@@ -82,7 +82,7 @@ func initWorkDirPath() WorkDirPath {
 	return WorkDirPath(w)
 }
 
-func initMachine() (machineID string, machineIPs []string) {
+func initMachineID() (machineID string) {
 	var er error
 	machineID = "localhost"
 	if machineID, er = machineid.ID(); er != nil {
@@ -91,10 +91,11 @@ func initMachine() (machineID string, machineIPs []string) {
 		}
 	}
 
-	if er != nil {
-		return
-	}
+	return machineID
+}
 
+func initMachineIP() (machineIPs []string) {
+	var er error
 	var netInterfaces []net.Interface
 	netInterfaces, er = net.Interfaces()
 
@@ -131,7 +132,7 @@ func initMachine() (machineID string, machineIPs []string) {
 		}
 	}
 
-	return machineID, machineIPs
+	return machineIPs
 }
 
 func fromFS(embedFS *embed.FS, patterns []string, conf interface{}) (err error) {
@@ -207,10 +208,8 @@ func NewConfig(ctx context.Context, embedFS *embed.FS, configPaths ConfigPaths, 
 	rd.timeZone = TimeZone(tz)
 	rd.timeLocation = loc
 	rd.timeOffset = TimeOffset(offset)
-
-	machineID, machineIPs := initMachine()
-	rd.machineID = machineID
-	rd.machineIPs = machineIPs
+	rd.machineID = initMachineID()
+	rd.machineIPs = initMachineIP()
 
 	var cfg config.Data
 	_, er := hunch.Waterfall(
