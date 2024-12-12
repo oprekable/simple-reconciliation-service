@@ -1,0 +1,29 @@
+name: SonarQube Analysis
+
+on:
+  push:
+    branches:
+      - main  # Change this to the branch you want to analyze
+
+jobs:
+  sonarqube:
+    name: SonarQube Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22.7  # Change this to your desired Go version
+
+      - name: Build Go project
+        run: go build
+
+      - name: Run SonarQube Scanner
+        uses: sonarsource/sonarqube-scan-action@v4
+        with:
+          projectBaseDir: ./  # Set this to the project's base directory
+          sonarToken: ${{ secrets.SONAR_TOKEN }}
