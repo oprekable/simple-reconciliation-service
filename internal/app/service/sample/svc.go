@@ -227,6 +227,8 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 }
 
 func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice interface{}, isDeleteDirectory bool) (totalData int64, executor hunch.Executable) {
+	formatText := "[sample.NewSvc] save csv file %s executed"
+
 	switch value := trxDataSlice.(type) {
 	case []interface{}:
 		{
@@ -247,7 +249,7 @@ func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice interfac
 							isDeleteDirectory,
 						)
 
-						log.Err(ct, "[sample.NewSvc] save csv file "+filePath+" executed", er)
+						log.Err(ct, fmt.Sprintf(formatText, filePath), er)
 						return nil, er
 					}
 				}
@@ -267,7 +269,7 @@ func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice interfac
 							isDeleteDirectory,
 						)
 
-						log.Err(ct, "[sample.NewSvc] save csv file "+filePath+" executed", er)
+						log.Err(ct, fmt.Sprintf(formatText, filePath), er)
 						return nil, er
 					}
 				}
@@ -287,7 +289,7 @@ func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice interfac
 							isDeleteDirectory,
 						)
 
-						log.Err(ct, "[sample.NewSvc] save csv file "+filePath+" executed", er)
+						log.Err(ct, fmt.Sprintf(formatText, filePath), er)
 						return nil, er
 					}
 				}

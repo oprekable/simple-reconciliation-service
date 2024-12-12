@@ -14,5 +14,5 @@ func NewNoopLog() sqldblogger.Logger {
 }
 
 func (zl *noopLogAdapter) Log(_ context.Context, _ sqldblogger.Level, _ string, _ map[string]interface{}) {
-
+	// do nothing
 }
