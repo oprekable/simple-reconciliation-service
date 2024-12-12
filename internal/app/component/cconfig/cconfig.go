@@ -97,9 +97,7 @@ func initMachineID() (machineID string) {
 func initMachineIP() (machineIPs []string) {
 	var er error
 	var netInterfaces []net.Interface
-	netInterfaces, er = net.Interfaces()
-
-	if er != nil {
+	if netInterfaces, er = net.Interfaces(); er != nil {
 		return
 	}
 
@@ -121,13 +119,11 @@ func initMachineIP() (machineIPs []string) {
 				ip = v.IP
 			}
 
-			if ip == nil {
-				continue
-			}
-
-			ip4 := ip.To4()
-			if ip4 != nil && ip4.String() != "127.0.0.1" {
-				machineIPs = append(machineIPs, ip4.String())
+			if ip != nil {
+				ip4 := ip.To4()
+				if ip4 != nil && ip4.String() != "127.0.0.1" {
+					machineIPs = append(machineIPs, ip4.String())
+				}
 			}
 		}
 	}
