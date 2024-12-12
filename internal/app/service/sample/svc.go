@@ -8,6 +8,7 @@ import (
 	"simple-reconciliation-service/internal/app/repository/sample"
 	"simple-reconciliation-service/internal/pkg/utils/csvhelper"
 	"simple-reconciliation-service/internal/pkg/utils/log"
+	"simple-reconciliation-service/internal/pkg/utils/progressbarhelper"
 	"strconv"
 	"strings"
 	"time"
@@ -49,9 +50,7 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 	_, err = hunch.Waterfall(
 		ctx,
 		func(c context.Context, _ interface{}) (interface{}, error) {
-			if bar != nil {
-				bar.Describe("[cyan][1/5] Pre Process Generate Sample...")
-			}
+			progressbarhelper.BarDescribe(bar, "[cyan][1/5] Pre Process Generate Sample...")
 
 			if isDeleteDirectory {
 				if er := csvhelper.DeleteDirectory(c, fs, s.comp.Config.Data.Reconciliation.SystemTRXPath); er != nil {
@@ -78,9 +77,7 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 			return nil, err
 		},
 		func(c context.Context, _ interface{}) (interface{}, error) {
-			if bar != nil {
-				bar.Describe("[cyan][2/5] Populate Trx Data...")
-			}
+			progressbarhelper.BarDescribe(bar, "[cyan][2/5] Populate Trx Data...")
 
 			r, er := s.repo.RepoSample.GetTrx(
 				c,
@@ -90,9 +87,7 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 			return r, er
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if bar != nil {
-				bar.Describe("[cyan][3/5] Post Process Generate Sample...")
-			}
+			progressbarhelper.BarDescribe(bar, "[cyan][3/5] Post Process Generate Sample...")
 
 			if i != nil {
 				trxData = i.([]sample.TrxData)
@@ -107,9 +102,7 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 			return nil, er
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if bar != nil {
-				bar.Describe("[cyan][4/5] Parse Sample Data...")
-			}
+			progressbarhelper.BarDescribe(bar, "[cyan][4/5] Parse Sample Data...")
 
 			systemTrxData := make([]SystemTrxData, 0, len(trxData))
 			bankTrxData := make(map[string][]interface{})
@@ -173,10 +166,7 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 			})
 
 			log.Msg(c, "[sample.NewSvc] populate systemTrxData & bankTrxData executed")
-
-			if bar != nil {
-				bar.Describe("[cyan][5/5] Export Sample Data to CSV files...")
-			}
+			progressbarhelper.BarDescribe(bar, "[cyan][5/5] Export Sample Data to CSV files...")
 
 			fileNameSuffix := strconv.FormatInt(time.Now().Unix(), 10)
 			returnSummary.FileSystemTrx = fmt.Sprintf("%s/%s.csv", s.comp.Config.Data.Reconciliation.SystemTRXPath, fileNameSuffix)

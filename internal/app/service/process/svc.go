@@ -11,6 +11,7 @@ import (
 	"simple-reconciliation-service/internal/app/repository"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser"
 	"simple-reconciliation-service/internal/pkg/utils/log"
+	"simple-reconciliation-service/internal/pkg/utils/progressbarhelper"
 	"slices"
 	"strings"
 	"time"
@@ -304,9 +305,7 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs, bar *pro
 	_, err = hunch.Waterfall(
 		ctx,
 		func(c context.Context, _ interface{}) (interface{}, error) {
-			if bar != nil {
-				bar.Describe("[cyan][1/7] Pre Process Generate Reconciliation...")
-			}
+			progressbarhelper.BarDescribe(bar, "[cyan][1/7] Pre Process Generate Reconciliation...")
 
 			er := s.repo.RepoProcess.Pre(
 				c,
@@ -319,9 +318,7 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs, bar *pro
 			return nil, err
 		},
 		func(c context.Context, _ interface{}) (interface{}, error) {
-			if bar != nil {
-				bar.Describe("[cyan][2/7] Parse System/Bank Trx Files...")
-			}
+			progressbarhelper.BarDescribe(bar, "[cyan][2/7] Parse System/Bank Trx Files...")
 
 			var trxData parser.TrxData
 			_, er := hunch.All(
@@ -384,23 +381,17 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs, bar *pro
 		func(c context.Context, i interface{}) (interface{}, error) {
 			if i != nil {
 				data := i.(parser.TrxData)
-				if bar != nil {
-					bar.Describe("[cyan][3/7] Import System Trx to DB...")
-				}
+				progressbarhelper.BarDescribe(bar, "[cyan][3/7] Import System Trx to DB...")
 
 				er := s.importReconcileSystemDataToDB(c, data.SystemTrx)
 				log.Err(c, "[process.NewSvc] GenerateReconciliation importReconcileSystemDataToDB executed", er)
 
-				if bar != nil {
-					bar.Describe("[cyan][4/7] Import Bank Trx to DB...")
-				}
+				progressbarhelper.BarDescribe(bar, "[cyan][4/7] Import Bank Trx to DB...")
 
 				er = s.importReconcileBankDataToDB(c, data.BankTrx)
 				log.Err(c, "[process.NewSvc] GenerateReconciliation importReconcileBankDataToDB executed", er)
 
-				if bar != nil {
-					bar.Describe("[cyan][5/7] Mapping Reconciliation Data...")
-				}
+				progressbarhelper.BarDescribe(bar, "[cyan][5/7] Mapping Reconciliation Data...")
 
 				er = s.importReconcileMapToDB(c, data.MinSystemAmount, data.MaxSystemAmount)
 				log.Err(c, "[process.NewSvc] GenerateReconciliation importReconcileMapToDB executed", er)
@@ -410,9 +401,7 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs, bar *pro
 			return nil, nil
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if bar != nil {
-				bar.Describe("[cyan][6/7] Generate Reconciliation Report Files...")
-			}
+			progressbarhelper.BarDescribe(bar, "[cyan][6/7] Generate Reconciliation Report Files...")
 
 			rd, er := s.generateReconciliationSummaryAndFiles(c)
 			if er != nil {
@@ -424,9 +413,7 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs, bar *pro
 			return nil, er
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if bar != nil {
-				bar.Describe("[cyan][7/7] Post Process Generate Reconciliation...")
-			}
+			progressbarhelper.BarDescribe(bar, "[cyan][7/7] Post Process Generate Reconciliation...")
 			//
 			//er := s.repo.RepoProcess.Post(
 			//	c,
