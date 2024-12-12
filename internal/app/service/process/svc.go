@@ -50,8 +50,6 @@ func (s *Svc) parseSystemTrxFile(ctx context.Context, afs afero.Fs, filePath str
 		if f != nil {
 			_ = f.Close()
 		}
-
-		log.Err(ctx, "[process.NewSvc] parseSystemTrxFiles fs.Open - '"+filePath+"'", err)
 	}()
 
 	var systemParser *parser.DefaultSystem
@@ -60,18 +58,22 @@ func (s *Svc) parseSystemTrxFile(ctx context.Context, afs afero.Fs, filePath str
 		true,
 	)
 
+	log.Err(ctx, "[process.NewSvc] parseSystemTrxFile - '"+filePath+"'", err)
+
 	if err != nil {
 		return
 	}
 
 	returnData, err = systemParser.ToSystemTrxData(ctx, filePath)
+	log.Err(ctx, "[process.NewSvc] parseSystemTrxFile parse.ToSystemTrxData executed", err)
+
 	return
 }
 
 func (s *Svc) parseSystemTrxFiles(ctx context.Context, afs afero.Fs) (returnData []*parser.SystemTrxData, err error) {
 	var filePathSystemTrx []string
 	cleanPath := filepath.Clean(s.comp.Config.Data.Reconciliation.SystemTRXPath)
-	er := afero.Walk(afs, cleanPath, func(path string, info fs.FileInfo, err error) error {
+	err = afero.Walk(afs, cleanPath, func(path string, info fs.FileInfo, err error) error {
 		if filepath.Ext(path) == ".csv" {
 			filePathSystemTrx = append(
 				filePathSystemTrx,
@@ -82,9 +84,10 @@ func (s *Svc) parseSystemTrxFiles(ctx context.Context, afs afero.Fs) (returnData
 		return nil
 	})
 
-	log.Err(ctx, "[process.NewSvc] parseSystemTrxFiles afero.Walk SystemTRXPath executed", er)
-	if er != nil {
-		return nil, er
+	log.Err(ctx, "[process.NewSvc] parseSystemTrxFiles afero.Walk SystemTRXPath executed", err)
+
+	if err != nil {
+		return
 	}
 
 	parallel.ForEach(filePathSystemTrx, func(item string, _ int) {
@@ -154,11 +157,59 @@ func (s *Svc) importReconcileMapToDB(ctx context.Context, min float64, max float
 	return
 }
 
-func (s *Svc) parseBankTrxFiles(ctx context.Context, afs afero.Fs) (returnData []*parser.BankTrxData, err error) {
-	type FilePathBankTrx struct {
-		Bank     string
-		FilePath string
+func (s *Svc) parseBankTrxFile(ctx context.Context, afs afero.Fs, item FilePathBankTrx) (returnData []*parser.BankTrxData, err error) {
+	var bankParser parser.ReconcileBankData
+	var f afero.File
+	f, err = afs.Open(item.FilePath)
+
+	defer func() {
+		if f != nil {
+			_ = f.Close()
+		}
+	}()
+
+	bank := strings.ToUpper(item.Bank)
+
+	switch bank {
+	case string(parser.BCABankParser):
+		{
+			bankParser, err = parser.NewBCABank(
+				bank,
+				csv.NewReader(f),
+				true,
+			)
+		}
+	case string(parser.BNIBankParser):
+		{
+			bankParser, err = parser.NewBNIBank(
+				bank,
+				csv.NewReader(f),
+				true,
+			)
+		}
+	default:
+		{
+			bankParser, err = parser.NewDefaultBank(
+				bank,
+				csv.NewReader(f),
+				true,
+			)
+		}
 	}
+
+	log.Err(ctx, "[process.NewSvc] parseBankTrxFiles parse ("+bank+") - '"+item.Bank+"' executed", err)
+
+	if err != nil {
+		return
+	}
+
+	returnData, err = bankParser.ToBankTrxData(ctx, item.FilePath)
+	log.Err(ctx, "[process.NewSvc] parseBankTrxFiles parse.ToBankTrxData ("+bank+") executed", err)
+
+	return
+}
+
+func (s *Svc) parseBankTrxFiles(ctx context.Context, afs afero.Fs) (returnData []*parser.BankTrxData, err error) {
 	var filePathBankTrx []FilePathBankTrx
 	cleanPath := filepath.Clean(s.comp.Config.Data.Reconciliation.BankTRXPath)
 	// scan only csv file with first folder as bank name, bank should in the list of accepted bank name
@@ -190,62 +241,8 @@ func (s *Svc) parseBankTrxFiles(ctx context.Context, afs afero.Fs) (returnData [
 	}
 
 	parallel.ForEach(filePathBankTrx, func(item FilePathBankTrx, _ int) {
-		bank := strings.ToUpper(item.Bank)
-		var bankParser parser.ReconcileBankData
-		f, er := afs.Open(item.FilePath)
-		log.Err(ctx, "[process.NewSvc] parseBankTrxFiles fs.Open - '"+item.FilePath+"'", er)
-		if er != nil {
-			if f != nil {
-				_ = f.Close()
-			}
-			return
-		}
-
-		switch bank {
-		case string(parser.BCABankParser):
-			{
-				bankParser, er = parser.NewBCABank(
-					bank,
-					csv.NewReader(f),
-					true,
-				)
-			}
-		case string(parser.BNIBankParser):
-			{
-				bankParser, er = parser.NewBNIBank(
-					bank,
-					csv.NewReader(f),
-					true,
-				)
-			}
-		default:
-			{
-				bankParser, er = parser.NewDefaultBank(
-					bank,
-					csv.NewReader(f),
-					true,
-				)
-			}
-		}
-		log.Err(ctx, "[process.NewSvc] parseBankTrxFiles parse ("+bank+") - '"+item.Bank+"' executed", er)
-		if er != nil {
-			if f != nil {
-				_ = f.Close()
-			}
-			return
-		}
-		data, er := bankParser.ToBankTrxData(ctx, item.FilePath)
-		log.Err(ctx, "[process.NewSvc] parseBankTrxFiles parse.ToBankTrxData ("+bank+") executed", er)
-		if er != nil {
-			if f != nil {
-				_ = f.Close()
-			}
-			return
-		}
+		data, _ := s.parseBankTrxFile(ctx, afs, item)
 		returnData = append(returnData, data...)
-		if f != nil {
-			_ = f.Close()
-		}
 	})
 
 	return

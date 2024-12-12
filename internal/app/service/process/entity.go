@@ -1,5 +1,10 @@
 package process
 
+type FilePathBankTrx struct {
+	Bank     string
+	FilePath string
+}
+
 type ReconciliationSummary struct {
 	FileMissingBankTrx              map[string]string `deepcopier:"skip"`
 	FileMissingSystemTrx            string            `deepcopier:"skip"`
