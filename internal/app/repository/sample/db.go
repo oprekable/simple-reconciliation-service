@@ -46,9 +46,10 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 		)
 	}()
 
-	tx, er := d.db.BeginTx(ctx, nil)
-	if er != nil {
-		return er
+	var tx *sql.Tx
+	tx, err = d.db.BeginTx(ctx, nil)
+	if err != nil {
+		return
 	}
 
 	_, err = hunch.Waterfall(
@@ -222,9 +223,10 @@ func (d *DB) Post(ctx context.Context) (err error) {
 		)
 	}()
 
-	tx, er := d.db.BeginTx(ctx, nil)
-	if er != nil {
-		return er
+	var tx *sql.Tx
+	tx, err = d.db.BeginTx(ctx, nil)
+	if err != nil {
+		return
 	}
 
 	_, err = hunch.Waterfall(

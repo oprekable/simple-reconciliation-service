@@ -121,14 +121,10 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 		)
 	}()
 
-	tx, er := d.db.BeginTx(ctx, nil)
-	if er != nil {
-		return er
-	}
-
-	e := d.db.Ping()
-	if e != nil {
-		return e
+	var tx *sql.Tx
+	tx, err = d.db.BeginTx(ctx, nil)
+	if err != nil {
+		return
 	}
 
 	_, err = hunch.Waterfall(
@@ -225,9 +221,10 @@ func (d *DB) ImportSystemTrx(ctx context.Context, data []*parser.SystemTrxData) 
 		)
 	}()
 
-	tx, er := d.db.BeginTx(ctx, nil)
-	if er != nil {
-		return er
+	var tx *sql.Tx
+	tx, err = d.db.BeginTx(ctx, nil)
+	if err != nil {
+		return
 	}
 
 	var jsonData string
@@ -276,9 +273,10 @@ func (d *DB) ImportBankTrx(ctx context.Context, data []*parser.BankTrxData) (err
 		)
 	}()
 
-	tx, er := d.db.BeginTx(ctx, nil)
-	if er != nil {
-		return er
+	var tx *sql.Tx
+	tx, err = d.db.BeginTx(ctx, nil)
+	if err != nil {
+		return
 	}
 
 	var jsonData string
@@ -327,9 +325,10 @@ func (d *DB) GenerateReconciliationMap(ctx context.Context, minAmount float64, m
 		)
 	}()
 
-	tx, er := d.db.BeginTx(ctx, nil)
-	if er != nil {
-		return er
+	var tx *sql.Tx
+	tx, err = d.db.BeginTx(ctx, nil)
+	if err != nil {
+		return
 	}
 
 	_, err = hunch.Waterfall(
@@ -400,9 +399,10 @@ func (d *DB) Post(ctx context.Context) (err error) {
 		)
 	}()
 
-	tx, er := d.db.BeginTx(ctx, nil)
-	if er != nil {
-		return er
+	var tx *sql.Tx
+	tx, err = d.db.BeginTx(ctx, nil)
+	if err != nil {
+		return
 	}
 
 	_, err = hunch.Waterfall(
