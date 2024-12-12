@@ -29,27 +29,27 @@ import (
 
 // Injectors from inject.go:
 
-func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz cconfig.TimeZone, errType []core.ErrorType, isShowLog clogger.IsShowLog) (*appcontext.AppContext, func(), error) {
+func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz cconfig.TimeZone, errType []core.ErrorType, isShowLog clogger.IsShowLog) (*appcontext.AppContext, error) {
 	configPaths := _wireConfigPathsValue
 	config, err := cconfig.NewConfig(ctx, embedFS, configPaths, appName, tz)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	logger := clogger.ProviderLogger(ctx, isShowLog)
 	erType := cerror.ProvideErType(errType)
 	cerrorError := cerror.NewError(erType)
 	dbSqlite, err := csqlite.NewDBSqlite(config, logger)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	components := component.NewComponents(config, logger, cerrorError, dbSqlite)
 	db, err := sample.ProviderDB(components)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	processDB, err := process.ProviderDB(components)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	repositories := repository.NewRepositories(db, processDB)
 	svc := sample2.ProviderSvc(components, repositories)
@@ -58,12 +58,11 @@ func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz
 	v := hcli.ProviderHandlers()
 	cliCli, err := cli.NewCli(components, services, repositories, v)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	serverServer := server.NewServer(cliCli)
 	appContext := appcontext.NewAppContext(ctx, embedFS, repositories, services, components, serverServer)
-	return appContext, func() {
-	}, nil
+	return appContext, nil
 }
 
 var (

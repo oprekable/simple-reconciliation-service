@@ -26,7 +26,7 @@ func WireApp(
 	tz cconfig.TimeZone,
 	errType []core.ErrorType,
 	isShowLog clogger.IsShowLog,
-) (*appcontext.AppContext, func(), error) {
+) (*appcontext.AppContext, error) {
 	wire.Build(
 		component.Set,
 		repository.Set,
@@ -35,7 +35,5 @@ func WireApp(
 		appcontext.NewAppContext,
 	)
 
-	return nil, func() {
-		// do nothing
-	}, nil
+	return nil, nil
 }

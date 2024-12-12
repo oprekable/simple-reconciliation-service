@@ -19,7 +19,7 @@ func Runner(cmd *cobra.Command, _ []string) (er error) {
 		atexit.AtExit()
 	}()
 
-	app, cleanup, er := inject.WireApp(
+	app, er := inject.WireApp(
 		cmd.Context(),
 		root.EmbedFS,
 		cconfig.AppName(variable.AppName),
@@ -53,8 +53,6 @@ func Runner(cmd *cobra.Command, _ []string) (er error) {
 	}
 
 	app.GetComponents().Config.Reconciliation.FromDate = fromDate
-
-	atexit.Add(cleanup)
 	app.Start()
 	return nil
 }
