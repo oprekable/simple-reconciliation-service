@@ -83,42 +83,50 @@ func initWorkDirPath() WorkDirPath {
 }
 
 func initMachine() (machineID string, machineIPs []string) {
+	var er error
 	machineID = "localhost"
-	if m, er := os.Hostname(); er == nil {
-		machineID = m
+	if machineID, er = machineid.ID(); er != nil {
+		if machineID, er = os.Hostname(); er != nil {
+			machineID = "localhost"
+		}
 	}
 
-	if mid, er := machineid.ID(); er == nil {
-		machineID = mid
+	if er != nil {
+		return
 	}
 
-	netInterfaces, er := net.Interfaces()
+	var netInterfaces []net.Interface
+	netInterfaces, er = net.Interfaces()
 
-	if er == nil {
-		for _, i := range netInterfaces {
-			adders, e := i.Addrs()
-			if e != nil {
-				fmt.Printf("failed to load machine IP information %v\n", e)
+	if er != nil {
+		return
+	}
+
+	for _, i := range netInterfaces {
+		var adders []net.Addr
+		var e error
+
+		if adders, e = i.Addrs(); e != nil {
+			fmt.Printf("failed to load machine IP information %v\n", e)
+			continue
+		}
+
+		for _, addr := range adders {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+
+			if ip == nil {
 				continue
 			}
 
-			for _, addr := range adders {
-				var ip net.IP
-				switch v := addr.(type) {
-				case *net.IPNet:
-					ip = v.IP
-				case *net.IPAddr:
-					ip = v.IP
-				}
-
-				if ip == nil {
-					continue
-				}
-
-				ip4 := ip.To4()
-				if ip4 != nil && ip4.String() != "127.0.0.1" {
-					machineIPs = append(machineIPs, ip4.String())
-				}
+			ip4 := ip.To4()
+			if ip4 != nil && ip4.String() != "127.0.0.1" {
+				machineIPs = append(machineIPs, ip4.String())
 			}
 		}
 	}
