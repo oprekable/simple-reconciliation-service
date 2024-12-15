@@ -279,6 +279,10 @@ func (s *Svc) importReconcileBankDataToDB(ctx context.Context, data []*parser.Ba
 }
 
 func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, err error) {
+	isOK := func(timeToCheck time.Time, minDate time.Time, maxDate time.Time) bool {
+		return (timeToCheck.Equal(minDate) || timeToCheck.After(minDate)) && timeToCheck.Before(maxDate)
+	}
+
 	_, err = hunch.All(
 		ctx,
 		func(ct context.Context) (d interface{}, e error) {
@@ -293,7 +297,7 @@ func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, 
 				return
 			}
 
-			trxData.SystemTrx = lo.Filter(data, func(item *parser.SystemTrxData, index int) (isOk bool) {
+			trxData.SystemTrx = lo.Filter(data, func(item *parser.SystemTrxData, index int) bool {
 				t, e := time.Parse("2006-01-02 15:04:05", item.TransactionTime)
 				if e != nil {
 					return false
@@ -301,10 +305,8 @@ func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, 
 
 				minDate := s.comp.Config.Data.Reconciliation.FromDate
 				maxDate := s.comp.Config.Data.Reconciliation.ToDate.AddDate(0, 0, 1)
-				isOk = (t.Equal(minDate) || t.After(minDate)) && t.Before(maxDate)
-
-				if !isOk {
-					return
+				if !isOK(t, minDate, maxDate) {
+					return false
 				}
 
 				if trxData.MinSystemAmount > item.Amount {
@@ -314,7 +316,7 @@ func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, 
 					trxData.MaxSystemAmount = item.Amount
 				}
 
-				return
+				return true
 			})
 
 			return
@@ -339,7 +341,7 @@ func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, 
 
 				minDate := s.comp.Config.Data.Reconciliation.FromDate
 				maxDate := s.comp.Config.Data.Reconciliation.ToDate.AddDate(0, 0, 1)
-				return (t.Equal(minDate) || t.After(minDate)) && t.Before(maxDate)
+				return isOK(t, minDate, maxDate)
 			})
 
 			return
