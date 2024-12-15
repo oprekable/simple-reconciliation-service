@@ -42,6 +42,9 @@ const (
 	FlagIsVerbose                            string = "showlog"
 	FlagIsVerboseShort                       string = "o"
 	FlagIsVerboseUsage                       string = `show logs`
+	FlagIsDebug                              string = "debug"
+	FlagIsDebugShort                         string = "g"
+	FlagIsDebugUsage                         string = `debug mode`
 )
 
 var EmbedFS *embed.FS
@@ -66,3 +69,4 @@ var FlagPercentageMatchSampleToGenerateValue int
 var DefaultPercentageMatchSampleToGenerate = 100
 var FlagIsDeleteCurrentSampleDirectoryValue bool
 var FlagIsVerboseValue bool
+var FlagIsDebugValue bool

@@ -116,7 +116,7 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 	defer func() {
 		log.Err(
 			ctx,
-			"[process.NewDB] Exec Pre method from db",
+			"[process.NewDB] Exec Pre method in db",
 			err,
 		)
 	}()
@@ -216,7 +216,7 @@ func (d *DB) ImportSystemTrx(ctx context.Context, data []*parser.SystemTrxData) 
 	defer func() {
 		log.Err(
 			ctx,
-			fmt.Sprintf("[process.NewDB] ImportSystemTrx method from db (%d data)", len(data)),
+			fmt.Sprintf("[process.NewDB] ImportSystemTrx method to db (%d data)", len(data)),
 			err,
 		)
 	}()
@@ -394,7 +394,7 @@ func (d *DB) Post(ctx context.Context) (err error) {
 	defer func() {
 		log.Err(
 			ctx,
-			"[process.NewDB] Exec Post method from db",
+			"[process.NewDB] Exec Post method in db",
 			err,
 		)
 	}()

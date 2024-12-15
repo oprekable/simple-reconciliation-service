@@ -18,7 +18,7 @@ type DBSqlite struct {
 	dBReadConnOnce  sync.Once
 }
 
-func NewDBSqlite(config *cconfig.Config, logger *clogger.Logger) (rd *DBSqlite, err error) {
+func NewDBSqlite(config *cconfig.Config, logger *clogger.Logger, readDBPath string, writeDBPath string) (rd *DBSqlite, err error) {
 	rd = &DBSqlite{}
 	ctx := logger.GetLogger().With().Str("component", "NewDBSqlite").Ctx(context.Background()).Logger().WithContext(logger.GetCtx())
 
@@ -33,8 +33,13 @@ func NewDBSqlite(config *cconfig.Config, logger *clogger.Logger) (rd *DBSqlite, 
 	if config.Data.Sqlite.IsEnabled {
 		if config.Data.Sqlite.Write.IsEnabled {
 			rd.dBWriteConnOnce.Do(func() {
+				dbParameters := config.Data.Sqlite.Write
+				if writeDBPath != "" {
+					dbParameters.DBPath = writeDBPath
+				}
+
 				if rd.DBWrite, err = sqlDriver.NewSqliteDatabase(
-					config.Data.Sqlite.Write.Options("sqlite_write"),
+					dbParameters.Options("sqlite_write"),
 					logger.GetLogger(),
 					config.Data.Sqlite.IsDoLogging,
 				); err != nil {
@@ -45,8 +50,13 @@ func NewDBSqlite(config *cconfig.Config, logger *clogger.Logger) (rd *DBSqlite, 
 
 		if config.Data.Sqlite.Read.IsEnabled {
 			rd.dBReadConnOnce.Do(func() {
+				dbParameters := config.Data.Sqlite.Read
+				if readDBPath != "" {
+					dbParameters.DBPath = readDBPath
+				}
+
 				if rd.DBRead, err = sqlDriver.NewSqliteDatabase(
-					config.Data.Sqlite.Read.Options("sqlite_read"),
+					dbParameters.Options("sqlite_read"),
 					logger.GetLogger(),
 					config.Data.Sqlite.IsDoLogging,
 				); err != nil {

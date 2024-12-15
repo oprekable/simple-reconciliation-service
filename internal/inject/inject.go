@@ -9,6 +9,7 @@ import (
 	"simple-reconciliation-service/internal/app/component"
 	"simple-reconciliation-service/internal/app/component/cconfig"
 	"simple-reconciliation-service/internal/app/component/clogger"
+	"simple-reconciliation-service/internal/app/component/csqlite"
 	"simple-reconciliation-service/internal/app/err/core"
 	"simple-reconciliation-service/internal/app/repository"
 	"simple-reconciliation-service/internal/app/server"
@@ -26,6 +27,8 @@ func WireApp(
 	tz cconfig.TimeZone,
 	errType []core.ErrorType,
 	isShowLog clogger.IsShowLog,
+	readDBPath csqlite.ReadDBPath,
+	writeDBPath csqlite.WriteDBPath,
 ) (*appcontext.AppContext, error) {
 	wire.Build(
 		component.Set,

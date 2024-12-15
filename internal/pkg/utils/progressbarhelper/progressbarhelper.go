@@ -7,3 +7,8 @@ func BarDescribe(bar *progressbar.ProgressBar, description string) {
 		bar.Describe(description)
 	}
 }
+func BarClear(bar *progressbar.ProgressBar) {
+	if bar != nil {
+		_ = bar.Clear()
+	}
+}

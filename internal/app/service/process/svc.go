@@ -297,9 +297,7 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs, bar *pro
 	ctx = s.comp.Logger.GetLogger().With().Str("component", "Process Service").Ctx(ctx).Logger().WithContext(s.comp.Logger.GetCtx())
 	defer func() {
 		_ = s.repo.RepoProcess.Close()
-		if bar != nil {
-			_ = bar.Clear()
-		}
+		progressbarhelper.BarClear(bar)
 	}()
 
 	_, err = hunch.Waterfall(
@@ -412,15 +410,16 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs, bar *pro
 			log.Err(c, "[process.NewSvc] GenerateReconciliation generateReconciliationSummaryAndFiles executed", er)
 			return nil, er
 		},
-		func(c context.Context, i interface{}) (interface{}, error) {
+		func(c context.Context, i interface{}) (r interface{}, e error) {
 			progressbarhelper.BarDescribe(bar, "[cyan][7/7] Post Process Generate Reconciliation...")
-			//
-			//er := s.repo.RepoProcess.Post(
-			//	c,
-			//)
-			//log.Err(c, "[process.NewSvc] GenerateReconciliation RepoProcess.Post executed", er)
-			//return nil, er
-			return nil, nil
+			if !s.comp.Config.Data.IsDebug {
+				e = s.repo.RepoProcess.Post(
+					c,
+				)
+				log.Err(c, "[process.NewSvc] GenerateReconciliation RepoProcess.Post executed", e)
+			}
+
+			return nil, e
 		},
 	)
 

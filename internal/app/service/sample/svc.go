@@ -36,7 +36,11 @@ func NewSvc(
 	}
 }
 
-func (s *Svc) deleteDirectorySystemTrxBankTrx(ctx context.Context, fs afero.Fs) (err error) {
+func (s *Svc) deleteDirectorySystemTrxBankTrx(ctx context.Context, fs afero.Fs, isDeleteDirectory bool) (err error) {
+	if !isDeleteDirectory {
+		return
+	}
+
 	if er := csvhelper.DeleteDirectory(ctx, fs, s.comp.Config.Data.Reconciliation.SystemTRXPath); er != nil {
 		log.Err(ctx, "[sample.NewSvc] DeleteDirectory SystemTRXPath", er)
 		return er
@@ -50,29 +54,79 @@ func (s *Svc) deleteDirectorySystemTrxBankTrx(ctx context.Context, fs afero.Fs) 
 	return
 }
 
+func (s *Svc) parse(data sample.TrxData) (systemTrxData SystemTrxDataInterface, bankTrxData BankTrxDataInterface) {
+	if data.IsSystemTrx {
+		systemTrxData = NewSystemTrxData(
+			data.TrxID,
+			data.Type,
+			data.TransactionTime,
+			data.Amount,
+		)
+	}
+
+	if data.IsBankTrx || (!data.IsBankTrx && !data.IsSystemTrx) {
+		bank := strings.ToLower(data.Bank)
+		multiplier := float64(1)
+		if data.Type == DEBIT {
+			multiplier = float64(-1)
+		}
+
+		switch strings.ToUpper(bank) {
+		case "BCA":
+			{
+				bankTrxData = NewBCABankTrxData(
+					bank,
+					data.UniqueIdentifier,
+					data.Date,
+					data.Amount*multiplier,
+				)
+			}
+		case "BNI":
+			{
+				bankTrxData = NewBNIBankTrxData(
+					bank,
+					data.UniqueIdentifier,
+					data.Date,
+					data.Amount*multiplier,
+				)
+			}
+		default:
+			{
+				bankTrxData = NewDefaultBankTrxData(
+					bank,
+					data.UniqueIdentifier,
+					data.Date,
+					data.Amount*multiplier,
+				)
+			}
+		}
+	}
+
+	return
+}
+
 func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.ProgressBar, isDeleteDirectory bool) (returnSummary Summary, err error) {
 	ctx = s.comp.Logger.GetLogger().With().Str("component", "Sample Service").Ctx(ctx).Logger().WithContext(s.comp.Logger.GetCtx())
 
 	var trxData []sample.TrxData
 	defer func() {
 		_ = s.repo.RepoSample.Close()
-		if bar != nil {
-			_ = bar.Clear()
-		}
+		progressbarhelper.BarClear(bar)
 	}()
 
 	_, err = hunch.Waterfall(
 		ctx,
-		func(c context.Context, _ interface{}) (interface{}, error) {
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
 			progressbarhelper.BarDescribe(bar, "[cyan][1/5] Pre Process Generate Sample...")
+			defer func() {
+				log.Err(c, "[sample.NewSvc] RepoSample.Pre executed", e)
+			}()
 
-			if isDeleteDirectory {
-				if er := s.deleteDirectorySystemTrxBankTrx(c, fs); er != nil {
-					return nil, er
-				}
+			if e = s.deleteDirectorySystemTrxBankTrx(c, fs, isDeleteDirectory); e != nil {
+				return nil, e
 			}
 
-			er := s.repo.RepoSample.Pre(
+			e = s.repo.RepoSample.Pre(
 				c,
 				s.comp.Config.Data.Reconciliation.ListBank,
 				s.comp.Config.Data.Reconciliation.FromDate,
@@ -81,8 +135,7 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 				s.comp.Config.Data.Reconciliation.PercentageMatch,
 			)
 
-			log.Err(c, "[sample.NewSvc] RepoSample.Pre executed", er)
-			return nil, err
+			return nil, e
 		},
 		func(c context.Context, _ interface{}) (r interface{}, er error) {
 			progressbarhelper.BarDescribe(bar, "[cyan][2/5] Populate Trx Data...")
@@ -94,80 +147,31 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 			log.Err(c, "[sample.NewSvc] RepoSample.GetTrx executed", er)
 			return nil, er
 		},
-		func(c context.Context, i interface{}) (interface{}, error) {
+		func(c context.Context, i interface{}) (r interface{}, e error) {
 			progressbarhelper.BarDescribe(bar, "[cyan][3/5] Post Process Generate Sample...")
-			er := s.repo.RepoSample.Post(
-				c,
-			)
+			if !s.comp.Config.Data.IsDebug {
+				e = s.repo.RepoSample.Post(
+					c,
+				)
+			}
 
-			log.Err(c, "[sample.NewSvc] RepoSample.Post executed", er)
+			log.Err(c, "[sample.NewSvc] RepoSample.Post executed", e)
 
-			return nil, er
+			return nil, e
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
 			progressbarhelper.BarDescribe(bar, "[cyan][4/5] Parse Sample Data...")
-
-			systemTrxData := make([]SystemTrxData, 0, len(trxData))
-			bankTrxData := make(map[string][]interface{})
+			systemTrxData := make([]*SystemTrxData, 0, len(trxData))
+			bankTrxData := make(map[string][]BankTrxDataInterface)
 
 			lo.ForEach(trxData, func(data sample.TrxData, _ int) {
-				switch {
-				case data.IsSystemTrx:
-					{
-						item := SystemTrxData{
-							TrxID:           data.TrxID,
-							Type:            data.Type,
-							TransactionTime: data.TransactionTime,
-							Amount:          data.Amount,
-						}
+				systemTrx, bankTrx := s.parse(data)
+				if systemTrx != nil {
+					systemTrxData = append(systemTrxData, systemTrx.(*SystemTrxData))
+				}
 
-						systemTrxData = append(systemTrxData, item)
-					}
-				case data.IsBankTrx || (!data.IsBankTrx && !data.IsSystemTrx):
-					{
-						bank := strings.ToLower(data.Bank)
-						if _, ok := bankTrxData[bank]; !ok {
-							bankTrxData[bank] = make([]interface{}, 0, len(trxData))
-						}
-
-						multiplier := float64(1)
-						if data.Type == DEBIT {
-							multiplier = float64(-1)
-						}
-
-						switch strings.ToUpper(bank) {
-						case "BCA":
-							{
-								item := BCABankTrxData{
-									BCAUniqueIdentifier: data.UniqueIdentifier,
-									BCADate:             data.Date,
-									BCAAmount:           data.Amount * multiplier,
-								}
-
-								bankTrxData[bank] = append(bankTrxData[bank], item)
-							}
-						case "BNI":
-							{
-								item := BNIBankTrxData{
-									BNIUniqueIdentifier: data.UniqueIdentifier,
-									BNIDate:             data.Date,
-									BNIAmount:           data.Amount * multiplier,
-								}
-
-								bankTrxData[bank] = append(bankTrxData[bank], item)
-							}
-						default:
-							{
-								item := DefaultBankTrxData{
-									UniqueIdentifier: data.UniqueIdentifier,
-									Date:             data.Date,
-									Amount:           data.Amount * multiplier,
-								}
-
-								bankTrxData[bank] = append(bankTrxData[bank], item)
-							}
-						}
-					}
+				if bankTrx != nil {
+					bankTrxData[bankTrx.GetBank()] = append(bankTrxData[bankTrx.GetBank()], bankTrx)
 				}
 			})
 
@@ -208,6 +212,10 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 					isDeleteDirectory,
 				)
 
+				if exec == nil || totalBankTrx == 0 {
+					continue
+				}
+
 				returnSummary.TotalBankTrx[bankName] = totalBankTrx
 				executor = append(executor, exec)
 			}
@@ -222,73 +230,74 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 	return
 }
 
-func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice interface{}, isDeleteDirectory bool) (totalData int64, executor hunch.Executable) {
+func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice []BankTrxDataInterface, isDeleteDirectory bool) (totalData int64, executor hunch.Executable) {
+	if len(trxDataSlice) == 0 {
+		return 0, nil
+	}
+
 	formatText := "[sample.NewSvc] save csv file %s executed"
 
-	switch value := trxDataSlice.(type) {
-	case []interface{}:
+	switch trxDataSlice[0].(type) {
+	case *BCABankTrxData:
 		{
-			switch value[0].(type) {
-			case BCABankTrxData:
-				{
-					bd := make([]BCABankTrxData, 0, len(value))
-					lo.ForEach(trxDataSlice.([]interface{}), func(data interface{}, _ int) {
-						bd = append(bd, data.(BCABankTrxData))
-					})
-					totalData = int64(len(bd))
-					executor = func(ct context.Context) (interface{}, error) {
-						er := csvhelper.StructToCSVFile(
-							ct,
-							fs,
-							filePath,
-							bd,
-							isDeleteDirectory,
-						)
+			bd := make([]*BCABankTrxData, 0, len(trxDataSlice))
 
-						log.Err(ct, fmt.Sprintf(formatText, filePath), er)
-						return nil, er
-					}
-				}
-			case BNIBankTrxData:
-				{
-					bd := make([]BNIBankTrxData, 0, len(value))
-					lo.ForEach(trxDataSlice.([]interface{}), func(data interface{}, _ int) {
-						bd = append(bd, data.(BNIBankTrxData))
-					})
-					totalData = int64(len(bd))
-					executor = func(ct context.Context) (interface{}, error) {
-						er := csvhelper.StructToCSVFile(
-							ct,
-							fs,
-							filePath,
-							bd,
-							isDeleteDirectory,
-						)
+			lo.ForEach(trxDataSlice, func(data BankTrxDataInterface, _ int) {
+				bd = append(bd, data.(*BCABankTrxData))
+			})
 
-						log.Err(ct, fmt.Sprintf(formatText, filePath), er)
-						return nil, er
-					}
-				}
-			default:
-				{
-					bd := make([]DefaultBankTrxData, 0, len(value))
-					lo.ForEach(trxDataSlice.([]interface{}), func(data interface{}, _ int) {
-						bd = append(bd, data.(DefaultBankTrxData))
-					})
-					totalData = int64(len(bd))
-					executor = func(ct context.Context) (interface{}, error) {
-						er := csvhelper.StructToCSVFile(
-							ct,
-							fs,
-							filePath,
-							bd,
-							isDeleteDirectory,
-						)
+			totalData = int64(len(bd))
+			executor = func(ct context.Context) (interface{}, error) {
+				er := csvhelper.StructToCSVFile(
+					ct,
+					fs,
+					filePath,
+					bd,
+					isDeleteDirectory,
+				)
 
-						log.Err(ct, fmt.Sprintf(formatText, filePath), er)
-						return nil, er
-					}
-				}
+				log.Err(ct, fmt.Sprintf(formatText, filePath), er)
+				return nil, er
+			}
+		}
+	case *BNIBankTrxData:
+		{
+			bd := make([]*BNIBankTrxData, 0, len(trxDataSlice))
+			lo.ForEach(trxDataSlice, func(data BankTrxDataInterface, _ int) {
+				bd = append(bd, data.(*BNIBankTrxData))
+			})
+			totalData = int64(len(bd))
+			executor = func(ct context.Context) (interface{}, error) {
+				er := csvhelper.StructToCSVFile(
+					ct,
+					fs,
+					filePath,
+					bd,
+					isDeleteDirectory,
+				)
+
+				log.Err(ct, fmt.Sprintf(formatText, filePath), er)
+				return nil, er
+			}
+		}
+	default:
+		{
+			bd := make([]*DefaultBankTrxData, 0, len(trxDataSlice))
+			lo.ForEach(trxDataSlice, func(data BankTrxDataInterface, _ int) {
+				bd = append(bd, data.(*DefaultBankTrxData))
+			})
+			totalData = int64(len(bd))
+			executor = func(ct context.Context) (interface{}, error) {
+				er := csvhelper.StructToCSVFile(
+					ct,
+					fs,
+					filePath,
+					bd,
+					isDeleteDirectory,
+				)
+
+				log.Err(ct, fmt.Sprintf(formatText, filePath), er)
+				return nil, er
 			}
 		}
 	}

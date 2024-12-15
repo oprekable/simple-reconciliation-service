@@ -37,11 +37,55 @@ func NewDB(
 	}, nil
 }
 
+func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
+	_, err = hunch.Waterfall(
+		ctx,
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
+			if d.stmtDropTableArguments == nil {
+				d.stmtDropTableArguments, e = d.db.PrepareContext(c, QueryDropTableArguments)
+			}
+
+			return nil, e
+		},
+		func(c context.Context, i interface{}) (interface{}, error) {
+			return tx.StmtContext(c, d.stmtDropTableArguments).ExecContext( //nolint:sqlclosecheck
+				c,
+			)
+		},
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
+			if d.stmtDropTableBanks == nil {
+				d.stmtDropTableBanks, e = d.db.PrepareContext(c, QueryDropTableBanks)
+			}
+
+			return nil, e
+		},
+		func(c context.Context, i interface{}) (interface{}, error) {
+			return tx.StmtContext(c, d.stmtDropTableBanks).ExecContext( //nolint:sqlclosecheck
+				c,
+			)
+		},
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
+			if d.stmtDropTableBaseData == nil {
+				d.stmtDropTableBaseData, e = d.db.PrepareContext(c, QueryDropTableBaseData)
+			}
+
+			return nil, e
+		},
+		func(c context.Context, i interface{}) (interface{}, error) {
+			return tx.StmtContext(c, d.stmtDropTableBaseData).ExecContext( //nolint:sqlclosecheck
+				c,
+			)
+		},
+	)
+
+	return
+}
+
 func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, toDate time.Time, limitTrxData int64, matchPercentage int) (err error) {
 	defer func() {
 		log.Err(
 			ctx,
-			"[sample.NewDB] Exec Pre method from db",
+			"[sample.NewDB] Exec Pre method in db",
 			err,
 		)
 	}()
@@ -138,7 +182,7 @@ func (d *DB) GetTrx(ctx context.Context) (returnData []TrxData, err error) {
 	defer func() {
 		log.Err(
 			ctx,
-			"[sample.NewDB] Exec GetData method from db",
+			"[sample.NewDB] Exec GetData method in db",
 			err,
 		)
 	}()
@@ -170,55 +214,11 @@ func (d *DB) GetTrx(ctx context.Context) (returnData []TrxData, err error) {
 	return
 }
 
-func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
-	_, err = hunch.Waterfall(
-		ctx,
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			if d.stmtDropTableArguments == nil {
-				d.stmtDropTableArguments, e = d.db.PrepareContext(c, QueryDropTableArguments)
-			}
-
-			return nil, e
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			return tx.StmtContext(c, d.stmtDropTableArguments).ExecContext( //nolint:sqlclosecheck
-				c,
-			)
-		},
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			if d.stmtDropTableBanks == nil {
-				d.stmtDropTableBanks, e = d.db.PrepareContext(c, QueryDropTableBanks)
-			}
-
-			return nil, e
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			return tx.StmtContext(c, d.stmtDropTableBanks).ExecContext( //nolint:sqlclosecheck
-				c,
-			)
-		},
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			if d.stmtDropTableBaseData == nil {
-				d.stmtDropTableBaseData, e = d.db.PrepareContext(c, QueryDropTableBaseData)
-			}
-
-			return nil, e
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			return tx.StmtContext(c, d.stmtDropTableBaseData).ExecContext( //nolint:sqlclosecheck
-				c,
-			)
-		},
-	)
-
-	return
-}
-
 func (d *DB) Post(ctx context.Context) (err error) {
 	defer func() {
 		log.Err(
 			ctx,
-			"[sample.NewDB] Exec Post method from db",
+			"[sample.NewDB] Exec Post method in db",
 			err,
 		)
 	}()

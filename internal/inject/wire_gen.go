@@ -29,7 +29,7 @@ import (
 
 // Injectors from inject.go:
 
-func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz cconfig.TimeZone, errType []core.ErrorType, isShowLog clogger.IsShowLog) (*appcontext.AppContext, error) {
+func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz cconfig.TimeZone, errType []core.ErrorType, isShowLog clogger.IsShowLog, readDBPath csqlite.ReadDBPath, writeDBPath csqlite.WriteDBPath) (*appcontext.AppContext, error) {
 	configPaths := _wireConfigPathsValue
 	config, err := cconfig.NewConfig(ctx, embedFS, configPaths, appName, tz)
 	if err != nil {
@@ -38,7 +38,7 @@ func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz
 	logger := clogger.ProviderLogger(ctx, isShowLog)
 	erType := cerror.ProvideErType(errType)
 	cerrorError := cerror.NewError(erType)
-	dbSqlite, err := csqlite.NewDBSqlite(config, logger)
+	dbSqlite, err := csqlite.ProviderDBSqlite(config, logger, readDBPath, writeDBPath)
 	if err != nil {
 		return nil, err
 	}

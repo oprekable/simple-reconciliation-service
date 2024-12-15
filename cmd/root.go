@@ -121,6 +121,14 @@ func init() {
 		false,
 		root.FlagIsVerboseUsage,
 	)
+
+	rootCmd.PersistentFlags().BoolVarP(
+		&root.FlagIsDebugValue,
+		root.FlagIsDebug,
+		root.FlagIsDebugShort,
+		false,
+		root.FlagIsDebugUsage,
+	)
 }
 
 func Execute(embedFS *embed.FS) {

@@ -85,6 +85,10 @@ func (h *Handler) Exec() (err error) {
 			fmt.Sprintf(formatText, root.FlagIsVerboseShort, root.FlagIsVerbose),
 			strconv.FormatBool(root.FlagIsVerboseValue),
 		},
+		{
+			fmt.Sprintf(formatText, root.FlagIsDebugShort, root.FlagIsDebug),
+			strconv.FormatBool(root.FlagIsDebugValue),
+		},
 	}
 
 	fmt.Println("")

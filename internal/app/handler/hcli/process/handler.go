@@ -84,6 +84,10 @@ func (h *Handler) Exec() error {
 			fmt.Sprintf(formatText, root.FlagIsVerboseShort, root.FlagIsVerbose),
 			strconv.FormatBool(root.FlagIsVerboseValue),
 		},
+		{
+			fmt.Sprintf(formatText, root.FlagIsDebugShort, root.FlagIsDebug),
+			strconv.FormatBool(root.FlagIsDebugValue),
+		},
 	}
 
 	tableArgs := tablewriter.NewWriter(os.Stdout)
