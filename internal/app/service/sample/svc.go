@@ -117,14 +117,13 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 	_, err = hunch.Waterfall(
 		ctx,
 		func(c context.Context, _ interface{}) (r interface{}, e error) {
+			return nil, s.deleteDirectorySystemTrxBankTrx(c, fs, isDeleteDirectory)
+		},
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
 			progressbarhelper.BarDescribe(bar, "[cyan][1/5] Pre Process Generate Sample...")
 			defer func() {
 				log.Err(c, "[sample.NewSvc] RepoSample.Pre executed", e)
 			}()
-
-			if e = s.deleteDirectorySystemTrxBankTrx(c, fs, isDeleteDirectory); e != nil {
-				return nil, e
-			}
 
 			e = s.repo.RepoSample.Pre(
 				c,

@@ -30,40 +30,42 @@ func NewDBSqlite(config *cconfig.Config, logger *clogger.Logger, readDBPath stri
 		}
 	}()
 
-	if config.Data.Sqlite.IsEnabled {
-		if config.Data.Sqlite.Write.IsEnabled {
-			rd.dBWriteConnOnce.Do(func() {
-				dbParameters := config.Data.Sqlite.Write
-				if writeDBPath != "" {
-					dbParameters.DBPath = writeDBPath
-				}
+	if !config.Data.Sqlite.IsEnabled {
+		return
+	}
 
-				if rd.DBWrite, err = sqlDriver.NewSqliteDatabase(
-					dbParameters.Options("sqlite_write"),
-					logger.GetLogger(),
-					config.Data.Sqlite.IsDoLogging,
-				); err != nil {
-					log.AddErr(ctx, err)
-				}
-			})
-		}
+	if config.Data.Sqlite.Write.IsEnabled {
+		rd.dBWriteConnOnce.Do(func() {
+			dbParameters := config.Data.Sqlite.Write
+			if writeDBPath != "" {
+				dbParameters.DBPath = writeDBPath
+			}
 
-		if config.Data.Sqlite.Read.IsEnabled {
-			rd.dBReadConnOnce.Do(func() {
-				dbParameters := config.Data.Sqlite.Read
-				if readDBPath != "" {
-					dbParameters.DBPath = readDBPath
-				}
+			rd.DBWrite, err = sqlDriver.NewSqliteDatabase(
+				dbParameters.Options("sqlite_write"),
+				logger.GetLogger(),
+				config.Data.Sqlite.IsDoLogging,
+			)
 
-				if rd.DBRead, err = sqlDriver.NewSqliteDatabase(
-					dbParameters.Options("sqlite_read"),
-					logger.GetLogger(),
-					config.Data.Sqlite.IsDoLogging,
-				); err != nil {
-					log.AddErr(ctx, err)
-				}
-			})
-		}
+			log.AddErr(ctx, err)
+		})
+	}
+
+	if config.Data.Sqlite.Read.IsEnabled {
+		rd.dBReadConnOnce.Do(func() {
+			dbParameters := config.Data.Sqlite.Read
+			if readDBPath != "" {
+				dbParameters.DBPath = readDBPath
+			}
+
+			rd.DBRead, err = sqlDriver.NewSqliteDatabase(
+				dbParameters.Options("sqlite_read"),
+				logger.GetLogger(),
+				config.Data.Sqlite.IsDoLogging,
+			)
+
+			log.AddErr(ctx, err)
+		})
 	}
 
 	log.Msg(ctx, "sqlite connection loaded")
