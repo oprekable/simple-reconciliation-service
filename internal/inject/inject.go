@@ -27,8 +27,7 @@ func WireApp(
 	tz cconfig.TimeZone,
 	errType []core.ErrorType,
 	isShowLog clogger.IsShowLog,
-	readDBPath csqlite.ReadDBPath,
-	writeDBPath csqlite.WriteDBPath,
+	dBPath csqlite.DBPath,
 ) (*appcontext.AppContext, error) {
 	wire.Build(
 		component.Set,

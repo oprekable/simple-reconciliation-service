@@ -7,15 +7,17 @@ import (
 	"github.com/google/wire"
 )
 
-type ReadDBPath string
-type WriteDBPath string
+type DBPath struct {
+	ReadDBPath  string
+	WriteDBPath string
+}
 
-func ProviderDBSqlite(config *cconfig.Config, logger *clogger.Logger, readDBPath ReadDBPath, writeDBPath WriteDBPath) (*DBSqlite, error) {
+func ProviderDBSqlite(config *cconfig.Config, logger *clogger.Logger, bBPath DBPath) (*DBSqlite, error) {
 	return NewDBSqlite(
 		config,
 		logger,
-		string(readDBPath),
-		string(writeDBPath),
+		bBPath.ReadDBPath,
+		bBPath.WriteDBPath,
 	)
 }
 

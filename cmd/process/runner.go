@@ -20,11 +20,10 @@ func Runner(cmd *cobra.Command, _ []string) (er error) {
 		atexit.AtExit()
 	}()
 
-	readDBPath := csqlite.ReadDBPath("")
-	writeDBPath := csqlite.WriteDBPath("")
+	dBPath := csqlite.DBPath{}
 
 	if root.FlagIsDebugValue {
-		writeDBPath = "./reconciliation.db"
+		dBPath.WriteDBPath = "./reconciliation.db"
 	}
 
 	app, er := inject.WireApp(
@@ -34,8 +33,7 @@ func Runner(cmd *cobra.Command, _ []string) (er error) {
 		cconfig.TimeZone(root.FlagTZValue),
 		err.RegisteredErrorType,
 		clogger.IsShowLog(root.FlagIsVerboseValue),
-		readDBPath,
-		writeDBPath,
+		dBPath,
 	)
 
 	if er != nil {
