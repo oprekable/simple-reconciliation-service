@@ -279,8 +279,28 @@ func (s *Svc) importReconcileBankDataToDB(ctx context.Context, data []*parser.Ba
 }
 
 func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, err error) {
-	isOK := func(timeToCheck time.Time, minDate time.Time, maxDate time.Time) bool {
-		return (timeToCheck.Equal(minDate) || timeToCheck.After(minDate)) && timeToCheck.Before(maxDate)
+	isOKSystemTrx := func(timeToCheck string) bool {
+		t, e := time.Parse("2006-01-02 15:04:05", timeToCheck)
+		if e != nil {
+			return false
+		}
+
+		minDate := s.comp.Config.Data.Reconciliation.FromDate
+		maxDate := s.comp.Config.Data.Reconciliation.ToDate.AddDate(0, 0, 1)
+
+		return (t.Equal(minDate) || t.After(minDate)) && t.Before(maxDate)
+	}
+
+	isOKBankTrx := func(timeToCheck string) bool {
+		t, e := time.Parse("2006-01-02", timeToCheck)
+		if e != nil {
+			return false
+		}
+
+		minDate := s.comp.Config.Data.Reconciliation.FromDate
+		maxDate := s.comp.Config.Data.Reconciliation.ToDate.AddDate(0, 0, 1)
+
+		return (t.Equal(minDate) || t.After(minDate)) && t.Before(maxDate)
 	}
 
 	_, err = hunch.All(
@@ -298,20 +318,14 @@ func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, 
 			}
 
 			trxData.SystemTrx = lo.Filter(data, func(item *parser.SystemTrxData, index int) bool {
-				t, e := time.Parse("2006-01-02 15:04:05", item.TransactionTime)
-				if e != nil {
-					return false
-				}
-
-				minDate := s.comp.Config.Data.Reconciliation.FromDate
-				maxDate := s.comp.Config.Data.Reconciliation.ToDate.AddDate(0, 0, 1)
-				if !isOK(t, minDate, maxDate) {
+				if !isOKSystemTrx(item.TransactionTime) {
 					return false
 				}
 
 				if trxData.MinSystemAmount > item.Amount {
 					trxData.MinSystemAmount = item.Amount
 				}
+
 				if trxData.MaxSystemAmount < item.Amount {
 					trxData.MaxSystemAmount = item.Amount
 				}
@@ -334,14 +348,7 @@ func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, 
 			}
 
 			trxData.BankTrx = lo.Filter(data, func(item *parser.BankTrxData, index int) bool {
-				t, e := time.Parse("2006-01-02", item.Date)
-				if e != nil {
-					return false
-				}
-
-				minDate := s.comp.Config.Data.Reconciliation.FromDate
-				maxDate := s.comp.Config.Data.Reconciliation.ToDate.AddDate(0, 0, 1)
-				return isOK(t, minDate, maxDate)
+				return isOKBankTrx(item.Date)
 			})
 
 			return
