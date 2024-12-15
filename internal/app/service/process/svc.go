@@ -278,6 +278,77 @@ func (s *Svc) importReconcileBankDataToDB(ctx context.Context, data []*parser.Ba
 	return
 }
 
+func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, err error) {
+	_, err = hunch.All(
+		ctx,
+		func(ct context.Context) (d interface{}, e error) {
+			defer func() {
+				log.Err(ct, "[process.NewSvc] GenerateReconciliation parseSystemTrxFiles executed", e)
+			}()
+
+			var data []*parser.SystemTrxData
+			data, e = s.parseSystemTrxFiles(ct, afs)
+
+			if e != nil {
+				return
+			}
+
+			trxData.SystemTrx = lo.Filter(data, func(item *parser.SystemTrxData, index int) (isOk bool) {
+				t, e := time.Parse("2006-01-02 15:04:05", item.TransactionTime)
+				if e != nil {
+					return false
+				}
+
+				minDate := s.comp.Config.Data.Reconciliation.FromDate
+				maxDate := s.comp.Config.Data.Reconciliation.ToDate.AddDate(0, 0, 1)
+				isOk = (t.Equal(minDate) || t.After(minDate)) && t.Before(maxDate)
+
+				if !isOk {
+					return
+				}
+
+				if trxData.MinSystemAmount > item.Amount {
+					trxData.MinSystemAmount = item.Amount
+				}
+				if trxData.MaxSystemAmount < item.Amount {
+					trxData.MaxSystemAmount = item.Amount
+				}
+
+				return
+			})
+
+			return
+		},
+		func(ct context.Context) (d interface{}, e error) {
+			defer func() {
+				log.Err(ct, "[process.NewSvc] GenerateReconciliation parseBankTrxFiles executed", e)
+			}()
+
+			var data []*parser.BankTrxData
+			data, e = s.parseBankTrxFiles(ct, afs)
+
+			if e != nil {
+				return
+			}
+
+			trxData.BankTrx = lo.Filter(data, func(item *parser.BankTrxData, index int) bool {
+				t, e := time.Parse("2006-01-02", item.Date)
+				if e != nil {
+					return false
+				}
+
+				minDate := s.comp.Config.Data.Reconciliation.FromDate
+				maxDate := s.comp.Config.Data.Reconciliation.ToDate.AddDate(0, 0, 1)
+				return (t.Equal(minDate) || t.After(minDate)) && t.Before(maxDate)
+			})
+
+			return
+		},
+	)
+
+	return
+}
+
 func (s *Svc) generateReconciliationSummaryAndFiles(ctx context.Context) (returnData ReconciliationSummary, err error) {
 	defer func() {
 		log.Err(ctx, "[process.NewSvc] GenerateReconciliation RepoProcess.GetReconciliationSummary executed", err)
@@ -317,98 +388,41 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs, bar *pro
 		},
 		func(c context.Context, _ interface{}) (interface{}, error) {
 			progressbarhelper.BarDescribe(bar, "[cyan][2/7] Parse System/Bank Trx Files...")
-
-			var trxData parser.TrxData
-			_, er := hunch.All(
-				c,
-				func(ct context.Context) (interface{}, error) {
-					data, er := s.parseSystemTrxFiles(ct, afs)
-					log.Err(ct, "[process.NewSvc] GenerateReconciliation parseSystemTrxFiles executed", er)
-					if er != nil {
-						return nil, er
-					}
-
-					trxData.SystemTrx = lo.Filter(data, func(item *parser.SystemTrxData, index int) bool {
-						t, e := time.Parse("2006-01-02 15:04:05", item.TransactionTime)
-						if e != nil {
-							return false
-						}
-
-						minDate := s.comp.Config.Data.Reconciliation.FromDate
-						maxDate := s.comp.Config.Data.Reconciliation.ToDate.AddDate(0, 0, 1)
-						isOk := (t.Equal(minDate) || t.After(minDate)) && t.Before(maxDate)
-
-						if isOk {
-							if trxData.MinSystemAmount > item.Amount {
-								trxData.MinSystemAmount = item.Amount
-							}
-							if trxData.MaxSystemAmount < item.Amount {
-								trxData.MaxSystemAmount = item.Amount
-							}
-						}
-
-						return isOk
-					})
-
-					return nil, nil
-				},
-				func(ct context.Context) (interface{}, error) {
-					data, er := s.parseBankTrxFiles(ct, afs)
-					log.Err(ct, "[process.NewSvc] GenerateReconciliation parseBankTrxFiles executed", er)
-					if er != nil {
-						return nil, er
-					}
-
-					trxData.BankTrx = lo.Filter(data, func(item *parser.BankTrxData, index int) bool {
-						t, e := time.Parse("2006-01-02", item.Date)
-						if e != nil {
-							return false
-						}
-
-						minDate := s.comp.Config.Data.Reconciliation.FromDate
-						maxDate := s.comp.Config.Data.Reconciliation.ToDate.AddDate(0, 0, 1)
-						isOk := (t.Equal(minDate) || t.After(minDate)) && t.Before(maxDate)
-						return isOk
-					})
-					return nil, nil
-				},
-			)
-
-			return trxData, er
+			return s.parse(c, afs)
 		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				data := i.(parser.TrxData)
-				progressbarhelper.BarDescribe(bar, "[cyan][3/7] Import System Trx to DB...")
+		func(c context.Context, i interface{}) (d interface{}, e error) {
+			progressbarhelper.BarDescribe(bar, "[cyan][3/7] Import System Trx to DB...")
 
-				er := s.importReconcileSystemDataToDB(c, data.SystemTrx)
-				log.Err(c, "[process.NewSvc] GenerateReconciliation importReconcileSystemDataToDB executed", er)
-
-				progressbarhelper.BarDescribe(bar, "[cyan][4/7] Import Bank Trx to DB...")
-
-				er = s.importReconcileBankDataToDB(c, data.BankTrx)
-				log.Err(c, "[process.NewSvc] GenerateReconciliation importReconcileBankDataToDB executed", er)
-
-				progressbarhelper.BarDescribe(bar, "[cyan][5/7] Mapping Reconciliation Data...")
-
-				er = s.importReconcileMapToDB(c, data.MinSystemAmount, data.MaxSystemAmount)
-				log.Err(c, "[process.NewSvc] GenerateReconciliation importReconcileMapToDB executed", er)
-			} else {
-				return nil, errors.New("empty parse data")
+			if i == nil {
+				e = errors.New("empty parse data")
+				return
 			}
-			return nil, nil
+
+			data := i.(parser.TrxData)
+
+			e = s.importReconcileSystemDataToDB(c, data.SystemTrx)
+			log.Err(c, "[process.NewSvc] GenerateReconciliation importReconcileSystemDataToDB executed", e)
+
+			progressbarhelper.BarDescribe(bar, "[cyan][4/7] Import Bank Trx to DB...")
+
+			e = s.importReconcileBankDataToDB(c, data.BankTrx)
+			log.Err(c, "[process.NewSvc] GenerateReconciliation importReconcileBankDataToDB executed", e)
+
+			progressbarhelper.BarDescribe(bar, "[cyan][5/7] Mapping Reconciliation Data...")
+
+			e = s.importReconcileMapToDB(c, data.MinSystemAmount, data.MaxSystemAmount)
+			log.Err(c, "[process.NewSvc] GenerateReconciliation importReconcileMapToDB executed", e)
+
+			return
 		},
-		func(c context.Context, i interface{}) (interface{}, error) {
+		func(c context.Context, i interface{}) (d interface{}, e error) {
 			progressbarhelper.BarDescribe(bar, "[cyan][6/7] Generate Reconciliation Report Files...")
+			defer func() {
+				log.Err(c, "[process.NewSvc] GenerateReconciliation generateReconciliationSummaryAndFiles executed", e)
+			}()
 
-			rd, er := s.generateReconciliationSummaryAndFiles(c)
-			if er != nil {
-				return nil, er
-			}
-
-			returnData = rd
-			log.Err(c, "[process.NewSvc] GenerateReconciliation generateReconciliationSummaryAndFiles executed", er)
-			return nil, er
+			returnData, e = s.generateReconciliationSummaryAndFiles(c)
+			return
 		},
 		func(c context.Context, i interface{}) (r interface{}, e error) {
 			progressbarhelper.BarDescribe(bar, "[cyan][7/7] Post Process Generate Reconciliation...")
