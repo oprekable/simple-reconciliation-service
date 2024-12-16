@@ -289,21 +289,9 @@ func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, 
 		return (t.Equal(minDate) || t.After(minDate)) && t.Before(maxDate)
 	}
 
-	isOKSystemTrx := func(timeToCheck string) bool {
-		t, e := time.Parse("2006-01-02 15:04:05", timeToCheck)
-		if e != nil {
-			return false
-		}
-
-		return isOK(
-			t,
-			s.comp.Config.Data.Reconciliation.FromDate,
-			s.comp.Config.Data.Reconciliation.ToDate.AddDate(0, 0, 1),
-		)
-	}
-
-	isOKBankTrx := func(timeToCheck string) bool {
-		t, e := time.Parse("2006-01-02", timeToCheck)
+	isOKCheck := func(timeToCheck string, timeFormat string) bool {
+		//t, e := time.Parse("2006-01-02 15:04:05", timeToCheck)
+		t, e := time.Parse(timeFormat, timeToCheck)
 		if e != nil {
 			return false
 		}
@@ -340,7 +328,7 @@ func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, 
 			}
 
 			trxData.SystemTrx = lo.Filter(data, func(item *systems.SystemTrxData, index int) bool {
-				if !isOKSystemTrx(item.TransactionTime) {
+				if !isOKCheck(item.TransactionTime, "2006-01-02 15:04:05") {
 					return false
 				}
 
@@ -364,7 +352,7 @@ func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, 
 			}
 
 			trxData.BankTrx = lo.Filter(data, func(item *banks.BankTrxData, index int) bool {
-				return isOKBankTrx(item.Date)
+				return isOKCheck(item.Date, "2006-01-02")
 			})
 
 			return
