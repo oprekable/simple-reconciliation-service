@@ -10,6 +10,12 @@ import (
 	"simple-reconciliation-service/internal/app/component"
 	"simple-reconciliation-service/internal/app/repository"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser"
+	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks"
+	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks/bca"
+	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks/bni"
+	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks/default_bank"
+	"simple-reconciliation-service/internal/pkg/reconcile/parser/systems"
+	"simple-reconciliation-service/internal/pkg/reconcile/parser/systems/default_system"
 	"simple-reconciliation-service/internal/pkg/utils/log"
 	"simple-reconciliation-service/internal/pkg/utils/progressbarhelper"
 	"slices"
@@ -43,7 +49,7 @@ func NewSvc(
 	}
 }
 
-func (s *Svc) parseSystemTrxFile(ctx context.Context, afs afero.Fs, filePath string) (returnData []*parser.SystemTrxData, err error) {
+func (s *Svc) parseSystemTrxFile(ctx context.Context, afs afero.Fs, filePath string) (returnData []*systems.SystemTrxData, err error) {
 	var f afero.File
 	f, err = afs.Open(filePath)
 
@@ -53,8 +59,8 @@ func (s *Svc) parseSystemTrxFile(ctx context.Context, afs afero.Fs, filePath str
 		}
 	}()
 
-	var systemParser *parser.DefaultSystem
-	systemParser, err = parser.NewDefaultSystem(
+	var systemParser *default_system.SystemParser
+	systemParser, err = default_system.NewSystemParser(
 		csv.NewReader(f),
 		true,
 	)
@@ -71,7 +77,7 @@ func (s *Svc) parseSystemTrxFile(ctx context.Context, afs afero.Fs, filePath str
 	return
 }
 
-func (s *Svc) parseSystemTrxFiles(ctx context.Context, afs afero.Fs) (returnData []*parser.SystemTrxData, err error) {
+func (s *Svc) parseSystemTrxFiles(ctx context.Context, afs afero.Fs) (returnData []*systems.SystemTrxData, err error) {
 	var filePathSystemTrx []string
 	cleanPath := filepath.Clean(s.comp.Config.Data.Reconciliation.SystemTRXPath)
 	err = afero.Walk(afs, cleanPath, func(path string, info fs.FileInfo, err error) error {
@@ -99,7 +105,7 @@ func (s *Svc) parseSystemTrxFiles(ctx context.Context, afs afero.Fs) (returnData
 	return
 }
 
-func (s *Svc) importReconcileSystemDataToDB(ctx context.Context, data []*parser.SystemTrxData) (err error) {
+func (s *Svc) importReconcileSystemDataToDB(ctx context.Context, data []*systems.SystemTrxData) (err error) {
 	defSize := len(data) / s.comp.Config.Data.Reconciliation.NumberWorker
 	numBigger := len(data) - defSize*s.comp.Config.Data.Reconciliation.NumberWorker
 	size := defSize + 1
@@ -158,8 +164,8 @@ func (s *Svc) importReconcileMapToDB(ctx context.Context, min float64, max float
 	return
 }
 
-func (s *Svc) parseBankTrxFile(ctx context.Context, afs afero.Fs, item FilePathBankTrx) (returnData []*parser.BankTrxData, err error) {
-	var bankParser parser.ReconcileBankData
+func (s *Svc) parseBankTrxFile(ctx context.Context, afs afero.Fs, item FilePathBankTrx) (returnData []*banks.BankTrxData, err error) {
+	var bankParser banks.ReconcileBankData
 	var f afero.File
 	f, err = afs.Open(item.FilePath)
 
@@ -172,17 +178,17 @@ func (s *Svc) parseBankTrxFile(ctx context.Context, afs afero.Fs, item FilePathB
 	bank := strings.ToUpper(item.Bank)
 
 	switch bank {
-	case string(parser.BCABankParser):
+	case string(banks.BCABankParser):
 		{
-			bankParser, err = parser.NewBCABank(
+			bankParser, err = bca.NewBankParser(
 				bank,
 				csv.NewReader(f),
 				true,
 			)
 		}
-	case string(parser.BNIBankParser):
+	case string(banks.BNIBankParser):
 		{
-			bankParser, err = parser.NewBNIBank(
+			bankParser, err = bni.NewBankParser(
 				bank,
 				csv.NewReader(f),
 				true,
@@ -190,7 +196,7 @@ func (s *Svc) parseBankTrxFile(ctx context.Context, afs afero.Fs, item FilePathB
 		}
 	default:
 		{
-			bankParser, err = parser.NewDefaultBank(
+			bankParser, err = default_bank.NewBankParser(
 				bank,
 				csv.NewReader(f),
 				true,
@@ -210,7 +216,7 @@ func (s *Svc) parseBankTrxFile(ctx context.Context, afs afero.Fs, item FilePathB
 	return
 }
 
-func (s *Svc) parseBankTrxFiles(ctx context.Context, afs afero.Fs) (returnData []*parser.BankTrxData, err error) {
+func (s *Svc) parseBankTrxFiles(ctx context.Context, afs afero.Fs) (returnData []*banks.BankTrxData, err error) {
 	var filePathBankTrx []FilePathBankTrx
 	cleanPath := filepath.Clean(s.comp.Config.Data.Reconciliation.BankTRXPath)
 	// scan only csv file with first folder as bank name, bank should in the list of accepted bank name
@@ -249,7 +255,7 @@ func (s *Svc) parseBankTrxFiles(ctx context.Context, afs afero.Fs) (returnData [
 	return
 }
 
-func (s *Svc) importReconcileBankDataToDB(ctx context.Context, data []*parser.BankTrxData) (err error) {
+func (s *Svc) importReconcileBankDataToDB(ctx context.Context, data []*banks.BankTrxData) (err error) {
 	numberWorker := s.comp.Config.Data.Reconciliation.NumberWorker * 2
 	defSize := len(data) / numberWorker
 	numBigger := len(data) - defSize*numberWorker
@@ -326,14 +332,14 @@ func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, 
 				log.Err(ct, "[process.NewSvc] GenerateReconciliation parseSystemTrxFiles executed", e)
 			}()
 
-			var data []*parser.SystemTrxData
+			var data []*systems.SystemTrxData
 			data, e = s.parseSystemTrxFiles(ct, afs)
 
 			if e != nil {
 				return
 			}
 
-			trxData.SystemTrx = lo.Filter(data, func(item *parser.SystemTrxData, index int) bool {
+			trxData.SystemTrx = lo.Filter(data, func(item *systems.SystemTrxData, index int) bool {
 				if !isOKSystemTrx(item.TransactionTime) {
 					return false
 				}
@@ -350,14 +356,14 @@ func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, 
 				log.Err(ct, "[process.NewSvc] GenerateReconciliation parseBankTrxFiles executed", e)
 			}()
 
-			var data []*parser.BankTrxData
+			var data []*banks.BankTrxData
 			data, e = s.parseBankTrxFiles(ct, afs)
 
 			if e != nil {
 				return
 			}
 
-			trxData.BankTrx = lo.Filter(data, func(item *parser.BankTrxData, index int) bool {
+			trxData.BankTrx = lo.Filter(data, func(item *banks.BankTrxData, index int) bool {
 				return isOKBankTrx(item.Date)
 			})
 

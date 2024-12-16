@@ -5,7 +5,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"simple-reconciliation-service/internal/pkg/reconcile/parser"
+	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks"
+	"simple-reconciliation-service/internal/pkg/reconcile/parser/systems"
 	"simple-reconciliation-service/internal/pkg/utils/log"
 	"strings"
 	"time"
@@ -212,7 +213,7 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 	return
 }
 
-func (d *DB) ImportSystemTrx(ctx context.Context, data []*parser.SystemTrxData) (err error) {
+func (d *DB) ImportSystemTrx(ctx context.Context, data []*systems.SystemTrxData) (err error) {
 	defer func() {
 		log.Err(
 			ctx,
@@ -264,7 +265,7 @@ func (d *DB) ImportSystemTrx(ctx context.Context, data []*parser.SystemTrxData) 
 	return
 }
 
-func (d *DB) ImportBankTrx(ctx context.Context, data []*parser.BankTrxData) (err error) {
+func (d *DB) ImportBankTrx(ctx context.Context, data []*banks.BankTrxData) (err error) {
 	defer func() {
 		log.Err(
 			ctx,

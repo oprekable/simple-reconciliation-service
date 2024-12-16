@@ -6,6 +6,12 @@ import (
 	"simple-reconciliation-service/internal/app/component"
 	"simple-reconciliation-service/internal/app/repository"
 	"simple-reconciliation-service/internal/app/repository/sample"
+	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks"
+	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks/bca"
+	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks/bni"
+	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks/default_bank"
+	"simple-reconciliation-service/internal/pkg/reconcile/parser/systems"
+	"simple-reconciliation-service/internal/pkg/reconcile/parser/systems/default_system"
 	"simple-reconciliation-service/internal/pkg/utils/csvhelper"
 	"simple-reconciliation-service/internal/pkg/utils/log"
 	"simple-reconciliation-service/internal/pkg/utils/progressbarhelper"
@@ -54,14 +60,14 @@ func (s *Svc) deleteDirectorySystemTrxBankTrx(ctx context.Context, fs afero.Fs, 
 	return
 }
 
-func (s *Svc) parse(data sample.TrxData) (systemTrxData SystemTrxDataInterface, bankTrxData BankTrxDataInterface) {
+func (s *Svc) parse(data sample.TrxData) (systemTrxData systems.SystemTrxDataInterface, bankTrxData banks.BankTrxDataInterface) {
 	if data.IsSystemTrx {
-		systemTrxData = NewSystemTrxData(
-			data.TrxID,
-			data.Type,
-			data.TransactionTime,
-			data.Amount,
-		)
+		systemTrxData = &default_system.CSVSystemTrxData{
+			TrxID:           data.TrxID,
+			TransactionTime: data.TransactionTime,
+			Type:            data.Type,
+			Amount:          data.Amount,
+		}
 	}
 
 	if data.IsBankTrx || (!data.IsBankTrx && !data.IsSystemTrx) {
@@ -74,30 +80,30 @@ func (s *Svc) parse(data sample.TrxData) (systemTrxData SystemTrxDataInterface, 
 		switch strings.ToUpper(bank) {
 		case "BCA":
 			{
-				bankTrxData = NewBCABankTrxData(
-					bank,
-					data.UniqueIdentifier,
-					data.Date,
-					data.Amount*multiplier,
-				)
+				bankTrxData = &bca.CSVBankTrxData{
+					UniqueIdentifier: data.UniqueIdentifier,
+					Date:             data.Date,
+					Amount:           data.Amount * multiplier,
+					Bank:             bank,
+				}
 			}
 		case "BNI":
 			{
-				bankTrxData = NewBNIBankTrxData(
-					bank,
-					data.UniqueIdentifier,
-					data.Date,
-					data.Amount*multiplier,
-				)
+				bankTrxData = &bni.CSVBankTrxData{
+					UniqueIdentifier: data.UniqueIdentifier,
+					Date:             data.Date,
+					Amount:           data.Amount * multiplier,
+					Bank:             bank,
+				}
 			}
 		default:
 			{
-				bankTrxData = NewDefaultBankTrxData(
-					bank,
-					data.UniqueIdentifier,
-					data.Date,
-					data.Amount*multiplier,
-				)
+				bankTrxData = &default_bank.CSVBankTrxData{
+					UniqueIdentifier: data.UniqueIdentifier,
+					Date:             data.Date,
+					Amount:           data.Amount * multiplier,
+					Bank:             bank,
+				}
 			}
 		}
 	}
@@ -160,13 +166,13 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
 			progressbarhelper.BarDescribe(bar, "[cyan][4/5] Parse Sample Data...")
-			systemTrxData := make([]*SystemTrxData, 0, len(trxData))
-			bankTrxData := make(map[string][]BankTrxDataInterface)
+			systemTrxData := make([]systems.SystemTrxDataInterface, 0, len(trxData))
+			bankTrxData := make(map[string][]banks.BankTrxDataInterface)
 
 			lo.ForEach(trxData, func(data sample.TrxData, _ int) {
 				systemTrx, bankTrx := s.parse(data)
 				if systemTrx != nil {
-					systemTrxData = append(systemTrxData, systemTrx.(*SystemTrxData))
+					systemTrxData = append(systemTrxData, systemTrx)
 				}
 
 				if bankTrx != nil {
@@ -177,9 +183,16 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 			log.Msg(c, "[sample.NewSvc] populate systemTrxData & bankTrxData executed")
 			progressbarhelper.BarDescribe(bar, "[cyan][5/5] Export Sample Data to CSV files...")
 
+			lengthSystemTrxData := len(systemTrxData)
 			fileNameSuffix := strconv.FormatInt(time.Now().Unix(), 10)
 			returnSummary.FileSystemTrx = fmt.Sprintf("%s/%s.csv", s.comp.Config.Data.Reconciliation.SystemTRXPath, fileNameSuffix)
-			returnSummary.TotalSystemTrx = int64(len(systemTrxData))
+			returnSummary.TotalSystemTrx = int64(lengthSystemTrxData)
+
+			sd := make([]*default_system.CSVSystemTrxData, 0, lengthSystemTrxData)
+
+			lo.ForEach(systemTrxData, func(data systems.SystemTrxDataInterface, _ int) {
+				sd = append(sd, data.(*default_system.CSVSystemTrxData))
+			})
 
 			executor := make([]hunch.Executable, 0, len(bankTrxData)+1)
 			executor = append(
@@ -189,7 +202,7 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 						ct,
 						fs,
 						returnSummary.FileSystemTrx,
-						systemTrxData,
+						sd,
 						isDeleteDirectory,
 					)
 
@@ -202,12 +215,12 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 			returnSummary.TotalBankTrx = make(map[string]int64)
 			returnSummary.FileBankTrx = make(map[string]string)
 
-			for bankName, trxData := range bankTrxData {
+			for bankName, bankTrx := range bankTrxData {
 				returnSummary.FileBankTrx[bankName] = fmt.Sprintf("%s/%s/%s_%s.csv", s.comp.Config.Data.Reconciliation.BankTRXPath, bankName, bankName, fileNameSuffix)
 				totalBankTrx, exec := s.appendExecutor(
 					fs,
 					returnSummary.FileBankTrx[bankName],
-					trxData,
+					bankTrx,
 					isDeleteDirectory,
 				)
 
@@ -229,7 +242,7 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 	return
 }
 
-func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice []BankTrxDataInterface, isDeleteDirectory bool) (totalData int64, executor hunch.Executable) {
+func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice []banks.BankTrxDataInterface, isDeleteDirectory bool) (totalData int64, executor hunch.Executable) {
 	if len(trxDataSlice) == 0 {
 		return 0, nil
 	}
@@ -237,12 +250,12 @@ func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice []BankTr
 	formatText := "[sample.NewSvc] save csv file %s executed"
 
 	switch trxDataSlice[0].(type) {
-	case *BCABankTrxData:
+	case *bca.CSVBankTrxData:
 		{
-			bd := make([]*BCABankTrxData, 0, len(trxDataSlice))
+			bd := make([]*bca.CSVBankTrxData, 0, len(trxDataSlice))
 
-			lo.ForEach(trxDataSlice, func(data BankTrxDataInterface, _ int) {
-				bd = append(bd, data.(*BCABankTrxData))
+			lo.ForEach(trxDataSlice, func(data banks.BankTrxDataInterface, _ int) {
+				bd = append(bd, data.(*bca.CSVBankTrxData))
 			})
 
 			totalData = int64(len(bd))
@@ -259,11 +272,11 @@ func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice []BankTr
 				return nil, er
 			}
 		}
-	case *BNIBankTrxData:
+	case *bni.CSVBankTrxData:
 		{
-			bd := make([]*BNIBankTrxData, 0, len(trxDataSlice))
-			lo.ForEach(trxDataSlice, func(data BankTrxDataInterface, _ int) {
-				bd = append(bd, data.(*BNIBankTrxData))
+			bd := make([]*bni.CSVBankTrxData, 0, len(trxDataSlice))
+			lo.ForEach(trxDataSlice, func(data banks.BankTrxDataInterface, _ int) {
+				bd = append(bd, data.(*bni.CSVBankTrxData))
 			})
 			totalData = int64(len(bd))
 			executor = func(ct context.Context) (interface{}, error) {
@@ -281,9 +294,9 @@ func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice []BankTr
 		}
 	default:
 		{
-			bd := make([]*DefaultBankTrxData, 0, len(trxDataSlice))
-			lo.ForEach(trxDataSlice, func(data BankTrxDataInterface, _ int) {
-				bd = append(bd, data.(*DefaultBankTrxData))
+			bd := make([]*default_bank.CSVBankTrxData, 0, len(trxDataSlice))
+			lo.ForEach(trxDataSlice, func(data banks.BankTrxDataInterface, _ int) {
+				bd = append(bd, data.(*default_bank.CSVBankTrxData))
 			})
 			totalData = int64(len(bd))
 			executor = func(ct context.Context) (interface{}, error) {
