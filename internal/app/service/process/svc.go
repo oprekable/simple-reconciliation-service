@@ -20,14 +20,16 @@ import (
 	"simple-reconciliation-service/internal/pkg/utils/progressbarhelper"
 	"slices"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/samber/lo/parallel"
 
 	"github.com/ulule/deepcopier"
 
 	"github.com/samber/lo"
 
 	"github.com/aaronjan/hunch"
-	"github.com/samber/lo/parallel"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/afero"
 )
@@ -97,10 +99,19 @@ func (s *Svc) parseSystemTrxFiles(ctx context.Context, afs afero.Fs) (returnData
 		return
 	}
 
+	sliceMutex := sync.Mutex{}
+	wg := sync.WaitGroup{}
+
 	parallel.ForEach(filePathSystemTrx, func(item string, _ int) {
+		wg.Add(1)
+		defer wg.Done()
 		data, _ := s.parseSystemTrxFile(ctx, afs, item)
+		sliceMutex.Lock()
 		returnData = append(returnData, data...)
+		sliceMutex.Unlock()
 	})
+
+	wg.Wait()
 
 	return
 }
@@ -247,10 +258,19 @@ func (s *Svc) parseBankTrxFiles(ctx context.Context, afs afero.Fs) (returnData [
 		return nil, er
 	}
 
+	sliceMutex := sync.Mutex{}
+	wg := sync.WaitGroup{}
+
 	parallel.ForEach(filePathBankTrx, func(item FilePathBankTrx, _ int) {
+		wg.Add(1)
+		defer wg.Done()
 		data, _ := s.parseBankTrxFile(ctx, afs, item)
+		sliceMutex.Lock()
 		returnData = append(returnData, data...)
+		sliceMutex.Unlock()
 	})
+
+	wg.Wait()
 
 	return
 }
@@ -290,7 +310,6 @@ func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, 
 	}
 
 	isOKCheck := func(timeToCheck string, timeFormat string) bool {
-		//t, e := time.Parse("2006-01-02 15:04:05", timeToCheck)
 		t, e := time.Parse(timeFormat, timeToCheck)
 		if e != nil {
 			return false
