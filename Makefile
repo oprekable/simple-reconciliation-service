@@ -48,9 +48,11 @@ test:
 
 .PHONY: run
 run:
-	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go
+	@go build .
+	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) ./simple-reconciliation-service
+	@#env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go
 
-base_args="--showlog=true --listbank=bca,bni,mandiri,bri,danamon --from=$$(date -j -v -30d '+%Y-%m-%d') --to=$$(date -j '+%Y-%m-%d')"
+base_args="--showlog=true --listbank=bca,bni,mandiri,bri,danamon --from=$$(date -j -v -1d '+%Y-%m-%d') --to=$$(date -j '+%Y-%m-%d')"
 process_args="process ${base_args} -g=false"
 sample_args="sample ${base_args} --percentagematch=100 --amountdata=100 -g=false"
 

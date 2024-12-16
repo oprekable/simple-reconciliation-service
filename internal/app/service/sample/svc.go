@@ -180,6 +180,8 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 				}
 			})
 
+			trxData = nil
+
 			log.Msg(c, "[sample.NewSvc] populate systemTrxData & bankTrxData executed")
 			progressbarhelper.BarDescribe(bar, "[cyan][5/5] Export Sample Data to CSV files...")
 
@@ -193,6 +195,8 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 			lo.ForEach(systemTrxData, func(data systems.SystemTrxDataInterface, _ int) {
 				sd = append(sd, data.(*default_system.CSVSystemTrxData))
 			})
+
+			systemTrxData = nil
 
 			executor := make([]hunch.Executable, 0, len(bankTrxData)+1)
 			executor = append(
@@ -231,6 +235,8 @@ func (s *Svc) GenerateSample(ctx context.Context, fs afero.Fs, bar *progressbar.
 				returnSummary.TotalBankTrx[bankName] = totalBankTrx
 				executor = append(executor, exec)
 			}
+
+			bankTrxData = nil
 
 			return hunch.All(
 				c,
