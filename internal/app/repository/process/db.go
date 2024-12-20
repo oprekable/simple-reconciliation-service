@@ -53,6 +53,35 @@ func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
 	return _helper.ExecTxQueries(ctx, d.db, tx, stmtData)
 }
 
+func (d *DB) dropTableWith(ctx context.Context, methodName string, extraExec hunch.ExecutableInSequence) (err error) {
+	var tx *sql.Tx
+	defer func() {
+		err = _helper.CommitOrRollback(ctx, tx, err)
+		log.Err(
+			ctx,
+			fmt.Sprintf(
+				"[process.NewDB] Exec %s method in db",
+				methodName,
+			),
+			err,
+		)
+	}()
+
+	_, err = hunch.Waterfall(
+		ctx,
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
+			tx, e = d.db.BeginTx(ctx, nil)
+			return nil, e
+		},
+		func(c context.Context, _ interface{}) (interface{}, error) {
+			return tx, d.dropTables(c, tx)
+		},
+		extraExec,
+	)
+
+	return
+}
+
 func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, startDate time.Time, toDate time.Time) (err error) {
 	return _helper.ExecTxQueries(
 		ctx,
@@ -93,41 +122,12 @@ func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, st
 	)
 }
 
-func (d *DB) postWith(ctx context.Context, methodName string, extraExec hunch.ExecutableInSequence) (err error) {
-	var tx *sql.Tx
-	defer func() {
-		err = _helper.CommitOrRollback(ctx, tx, err)
-		log.Err(
-			ctx,
-			fmt.Sprintf(
-				"[process.NewDB] Exec %s method in db",
-				methodName,
-			),
-			err,
-		)
-	}()
-
-	_, err = hunch.Waterfall(
-		ctx,
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			tx, e = d.db.BeginTx(ctx, nil)
-			return nil, e
-		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
-			return tx, d.dropTables(c, tx)
-		},
-		extraExec,
-	)
-
-	return
-}
-
 func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, toDate time.Time) (err error) {
 	extraExec := func(c context.Context, i interface{}) (interface{}, error) {
 		return nil, d.createTables(c, i.(*sql.Tx), listBank, startDate, toDate)
 	}
 
-	return d.postWith(
+	return d.dropTableWith(
 		ctx,
 		"Pre",
 		extraExec,
@@ -251,7 +251,7 @@ func (d *DB) Post(ctx context.Context) (err error) {
 		return nil, nil
 	}
 
-	return d.postWith(
+	return d.dropTableWith(
 		ctx,
 		"Post",
 		extraExec,
