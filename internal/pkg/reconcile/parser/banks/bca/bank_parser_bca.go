@@ -71,17 +71,9 @@ func NewBankParser(
 	return &BankParser{
 		parser:       banks.BCABankParser,
 		bank:         bank,
-		csvReader:    csvReader,
 		isHaveHeader: isHaveHeader,
+		csvReader:    csvReader,
 	}, nil
-}
-
-func (d *BankParser) GetParser() banks.BankParserType {
-	return d.parser
-}
-
-func (d *BankParser) GetBank() string {
-	return d.bank
 }
 
 func (d *BankParser) ToBankTrxData(ctx context.Context, filePath string) (returnData []*banks.BankTrxData, err error) {
@@ -93,4 +85,12 @@ func (d *BankParser) ToBankTrxData(ctx context.Context, filePath string) (return
 		d.csvReader,
 		&CSVBankTrxData{},
 	)
+}
+
+func (d *BankParser) GetParser() banks.BankParserType {
+	return d.parser
+}
+
+func (d *BankParser) GetBank() string {
+	return d.bank
 }
