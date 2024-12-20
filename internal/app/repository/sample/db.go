@@ -15,6 +15,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+type StmtData struct {
+	Query string
+	Args  []any
+}
+
 type DB struct {
 	db *sql.DB
 }
@@ -31,10 +36,16 @@ func NewDB(
 
 func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
 	var executableInSequence []hunch.ExecutableInSequence
-	stmtData := []string{
-		QueryDropTableArguments,
-		QueryDropTableBanks,
-		QueryDropTableBaseData,
+	stmtData := []StmtData{
+		{
+			Query: QueryDropTableArguments,
+		},
+		{
+			Query: QueryDropTableBanks,
+		},
+		{
+			Query: QueryDropTableBaseData,
+		},
 	}
 
 	for k := range stmtData {
@@ -43,7 +54,7 @@ func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
 			func(c context.Context, _ interface{}) (interface{}, error) {
 				i, e := d.db.PrepareContext(
 					c,
-					stmtData[k],
+					stmtData[k].Query,
 				)
 
 				if e != nil {
@@ -52,6 +63,69 @@ func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
 
 				return tx.StmtContext(c, i).ExecContext( //nolint:sqlclosecheck
 					c,
+				)
+			},
+		)
+	}
+
+	_, err = hunch.Waterfall(
+		ctx,
+		executableInSequence...,
+	)
+
+	return
+}
+
+func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, startDate time.Time, toDate time.Time, limitTrxData int64, matchPercentage int) (err error) {
+	var executableInSequence []hunch.ExecutableInSequence
+	stmtData := []StmtData{
+		{
+			Query: QueryCreateTableArguments,
+			Args: func() []any {
+				dateStringFormat := "2006-01-02"
+				return []any{
+					startDate.Format(dateStringFormat),
+					toDate.Format(dateStringFormat),
+					strconv.FormatInt(limitTrxData, 10),
+					strconv.Itoa(matchPercentage),
+				}
+			}(),
+		},
+		{
+			Query: QueryCreateTableBanks,
+			Args: func() []any {
+				b := new(strings.Builder)
+				_ = json.NewEncoder(b).Encode(listBank)
+
+				return []any{
+					b.String(),
+				}
+			}(),
+		},
+		{
+			Query: QueryCreateTableBaseData,
+		},
+		{
+			Query: QueryCreateIndexTableBaseData,
+		},
+	}
+
+	for k := range stmtData {
+		executableInSequence = append(
+			executableInSequence,
+			func(c context.Context, _ interface{}) (interface{}, error) {
+				i, e := d.db.PrepareContext(
+					c,
+					stmtData[k].Query,
+				)
+
+				if e != nil {
+					return nil, e
+				}
+
+				return tx.StmtContext(c, i).ExecContext( //nolint:sqlclosecheck
+					c,
+					stmtData[k].Args...,
 				)
 			},
 		)
@@ -92,49 +166,8 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 		func(c context.Context, _ interface{}) (interface{}, error) {
 			return nil, d.dropTables(c, tx)
 		},
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			return d.db.PrepareContext(c, QueryCreateTableArguments)
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			dateStringFormat := "2006-01-02"
-			return tx.StmtContext(c, i.(*sql.Stmt)).ExecContext( //nolint:sqlclosecheck
-				c,
-				startDate.Format(dateStringFormat),
-				toDate.Format(dateStringFormat),
-				strconv.FormatInt(limitTrxData, 10),
-				strconv.Itoa(matchPercentage),
-			)
-		},
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			return d.db.PrepareContext(c, QueryCreateTableBanks)
-		},
-		func(c context.Context, i interface{}) (r interface{}, e error) {
-			b := new(strings.Builder)
-			e = json.NewEncoder(b).Encode(listBank)
-			if e != nil {
-				return nil, e
-			}
-
-			return tx.StmtContext(c, i.(*sql.Stmt)).ExecContext( //nolint:sqlclosecheck
-				c,
-				b.String(),
-			)
-		},
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			return d.db.PrepareContext(c, QueryCreateTableBaseData)
-		},
-		func(c context.Context, i interface{}) (r interface{}, e error) {
-			return tx.StmtContext(c, i.(*sql.Stmt)).ExecContext( //nolint:sqlclosecheck
-				c,
-			)
-		},
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			return d.db.PrepareContext(c, QueryCreateIndexTableBaseData)
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			return tx.StmtContext(c, i.(*sql.Stmt)).ExecContext( //nolint:sqlclosecheck
-				c,
-			)
+		func(c context.Context, _ interface{}) (interface{}, error) {
+			return nil, d.createTables(c, tx, listBank, startDate, toDate, limitTrxData, matchPercentage)
 		},
 	)
 

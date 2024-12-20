@@ -54,7 +54,7 @@ run:
 
 base_args="--showlog=true --listbank=bca,bni,mandiri,bri,danamon --from=$$(date -j -v -1d '+%Y-%m-%d') --to=$$(date -j '+%Y-%m-%d')"
 process_args="process ${base_args} -g=false"
-sample_args="sample ${base_args} --percentagematch=100 --amountdata=10 -g=false"
+sample_args="sample ${base_args} --percentagematch=100 --amountdata=10 -g=true"
 
 .PHONY: echo-sample-args
 echo-sample-args:
