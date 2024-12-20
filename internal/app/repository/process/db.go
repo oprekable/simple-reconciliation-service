@@ -35,10 +35,6 @@ func NewDB(
 
 func (d *DB) dropTableWith(ctx context.Context, methodName string, extraExec hunch.ExecutableInSequence) (err error) {
 	var tx *sql.Tx
-	defer func() {
-		log.Err(ctx, fmt.Sprintf("[process.NewDB] Exec %s method in db", methodName), _helper.CommitOrRollback(tx, err))
-	}()
-
 	_, err = hunch.Waterfall(
 		ctx,
 		func(c context.Context, _ interface{}) (r interface{}, e error) {
@@ -73,6 +69,10 @@ func (d *DB) dropTableWith(ctx context.Context, methodName string, extraExec hun
 		},
 		extraExec,
 	)
+
+	defer func() {
+		log.Err(ctx, fmt.Sprintf("[process.NewDB] Exec %s method in db", methodName), _helper.CommitOrRollback(tx, err))
+	}()
 
 	return
 }
