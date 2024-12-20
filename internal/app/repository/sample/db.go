@@ -89,7 +89,10 @@ func (d *DB) postWith(ctx context.Context, methodName string, extraExec hunch.Ex
 		err = _helper.CommitOrRollback(ctx, tx, err)
 		log.Err(
 			ctx,
-			fmt.Sprintf("[sample.NewDB] Exec %s method in db", methodName),
+			fmt.Sprintf(
+				"[sample.NewDB] Exec %s method in db",
+				methodName,
+			),
 			err,
 		)
 	}()
