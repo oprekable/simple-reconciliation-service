@@ -37,10 +37,7 @@ func (d *DB) dropTableWith(ctx context.Context, methodName string, extraExec hun
 		err = _helper.CommitOrRollback(ctx, tx, err)
 		log.Err(
 			ctx,
-			fmt.Sprintf(
-				"[process.NewDB] Exec %s method in db",
-				methodName,
-			),
+			fmt.Sprintf("[process.NewDB] Exec %s method in db", methodName),
 			err,
 		)
 	}()

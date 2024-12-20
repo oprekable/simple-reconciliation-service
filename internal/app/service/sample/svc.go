@@ -81,28 +81,28 @@ func (s *Svc) parse(data sample.TrxData) (systemTrxData systems.SystemTrxDataInt
 		case "BCA":
 			{
 				bankTrxData = &bca.CSVBankTrxData{
-					UniqueIdentifier: data.UniqueIdentifier,
-					Date:             data.Date,
-					Amount:           data.Amount * multiplier,
-					Bank:             bank,
+					BCAUniqueIdentifier: data.UniqueIdentifier,
+					BCADate:             data.Date,
+					BCAAmount:           data.Amount * multiplier,
+					BCABank:             bank,
 				}
 			}
 		case "BNI":
 			{
 				bankTrxData = &bni.CSVBankTrxData{
-					UniqueIdentifier: data.UniqueIdentifier,
-					Date:             data.Date,
-					Amount:           data.Amount * multiplier,
-					Bank:             bank,
+					BNIUniqueIdentifier: data.UniqueIdentifier,
+					BNIDate:             data.Date,
+					BNIAmount:           data.Amount * multiplier,
+					BNIBank:             bank,
 				}
 			}
 		default:
 			{
 				bankTrxData = &default_bank.CSVBankTrxData{
-					UniqueIdentifier: data.UniqueIdentifier,
-					Date:             data.Date,
-					Amount:           data.Amount * multiplier,
-					Bank:             bank,
+					DefaultUniqueIdentifier: data.UniqueIdentifier,
+					DefaultDate:             data.Date,
+					DefaultAmount:           data.Amount * multiplier,
+					DefaultBank:             bank,
 				}
 			}
 		}

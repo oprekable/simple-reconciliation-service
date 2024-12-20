@@ -6,7 +6,6 @@ type ReconcileBankData interface {
 	GetBank() string
 	GetParser() BankParserType
 	ToBankTrxData(ctx context.Context, filePath string) (returnData []*BankTrxData, err error)
-	ToSql(ctx context.Context, filePath string, sqlPattern string) (returnData string, err error)
 }
 
 type BankTrxDataInterface interface {

@@ -1,44 +1,41 @@
 package default_bank
 
 import (
-	"bytes"
 	"context"
 	"encoding/csv"
-	"fmt"
 	"io"
 	"math"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks"
 	"simple-reconciliation-service/internal/pkg/utils/log"
 
 	"github.com/jszwec/csvutil"
-	"github.com/samber/lo"
 )
 
 type CSVBankTrxData struct {
-	UniqueIdentifier string  `csv:"UniqueIdentifier"`
-	Date             string  `csv:"Date"`
-	Bank             string  `csv:"-"`
-	Amount           float64 `csv:"Amount"`
+	DefaultUniqueIdentifier string  `csv:"UniqueIdentifier"`
+	DefaultDate             string  `csv:"Date"`
+	DefaultBank             string  `csv:"-"`
+	DefaultAmount           float64 `csv:"Amount"`
 }
 
 func (u *CSVBankTrxData) GetUniqueIdentifier() string {
-	return u.UniqueIdentifier
+	return u.DefaultUniqueIdentifier
 }
 
 func (u *CSVBankTrxData) GetDate() string {
-	return u.Date
+	return u.DefaultDate
 }
 
 func (u *CSVBankTrxData) GetAmount() float64 {
-	return u.Amount
+	return u.DefaultAmount
 }
 
 func (u *CSVBankTrxData) GetAbsAmount() float64 {
-	return math.Abs(u.Amount)
+	return math.Abs(u.DefaultAmount)
 }
 
 func (u *CSVBankTrxData) GetType() banks.TrxType {
-	if u.Amount <= 0 {
+	if u.DefaultAmount <= 0 {
 		return banks.DEBIT
 	}
 
@@ -46,15 +43,15 @@ func (u *CSVBankTrxData) GetType() banks.TrxType {
 }
 
 func (u *CSVBankTrxData) GetBank() string {
-	return u.Bank
+	return u.DefaultBank
 }
 
 func (u *CSVBankTrxData) ToBankTrxData() *banks.BankTrxData {
 	return &banks.BankTrxData{
-		UniqueIdentifier: u.UniqueIdentifier,
-		Date:             u.Date,
+		UniqueIdentifier: u.DefaultUniqueIdentifier,
+		Date:             u.DefaultDate,
 		Type:             u.GetType(),
-		Bank:             u.Bank,
+		Bank:             u.DefaultBank,
 		FilePath:         "",
 		Amount:           u.GetAbsAmount(),
 	}
@@ -128,32 +125,5 @@ func (d *BankParser) ToBankTrxData(ctx context.Context, filePath string) (return
 		returnData = append(returnData, bankTrxData)
 	}
 
-	return
-}
-
-func (d *BankParser) ToSql(ctx context.Context, filePath string, sqlPattern string) (returnData string, err error) {
-	data, err := d.ToBankTrxData(ctx, filePath)
-	if err != nil {
-		log.AddErr(ctx, err)
-		return returnData, err
-	}
-
-	var buffer bytes.Buffer
-
-	lo.ForEach(data, func(d *banks.BankTrxData, _ int) {
-		buffer.WriteString(
-			fmt.Sprintf(
-				sqlPattern,
-				d.UniqueIdentifier,
-				d.Date,
-				d.Bank,
-				d.Type,
-				d.Amount,
-				d.FilePath,
-			),
-		)
-	})
-
-	returnData = buffer.String()
 	return
 }

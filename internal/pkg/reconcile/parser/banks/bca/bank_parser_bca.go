@@ -1,44 +1,41 @@
 package bca
 
 import (
-	"bytes"
 	"context"
 	"encoding/csv"
-	"fmt"
 	"io"
 	"math"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks"
 	"simple-reconciliation-service/internal/pkg/utils/log"
 
 	"github.com/jszwec/csvutil"
-	"github.com/samber/lo"
 )
 
 type CSVBankTrxData struct {
-	UniqueIdentifier string  `csv:"BCAUniqueIdentifier"`
-	Date             string  `csv:"BCADate"`
-	Bank             string  `csv:"-"`
-	Amount           float64 `csv:"BCAAmount"`
+	BCAUniqueIdentifier string  `csv:"BCAUniqueIdentifier"`
+	BCADate             string  `csv:"BCADate"`
+	BCABank             string  `csv:"-"`
+	BCAAmount           float64 `csv:"BCAAmount"`
 }
 
 func (u *CSVBankTrxData) GetUniqueIdentifier() string {
-	return u.UniqueIdentifier
+	return u.BCAUniqueIdentifier
 }
 
 func (u *CSVBankTrxData) GetDate() string {
-	return u.Date
+	return u.BCADate
 }
 
 func (u *CSVBankTrxData) GetAmount() float64 {
-	return u.Amount
+	return u.BCAAmount
 }
 
 func (u *CSVBankTrxData) GetAbsAmount() float64 {
-	return math.Abs(u.Amount)
+	return math.Abs(u.BCAAmount)
 }
 
 func (u *CSVBankTrxData) GetType() banks.TrxType {
-	if u.Amount <= 0 {
+	if u.BCAAmount <= 0 {
 		return banks.DEBIT
 	}
 
@@ -46,15 +43,15 @@ func (u *CSVBankTrxData) GetType() banks.TrxType {
 }
 
 func (u *CSVBankTrxData) GetBank() string {
-	return u.Bank
+	return u.BCABank
 }
 
 func (u *CSVBankTrxData) ToBankTrxData() *banks.BankTrxData {
 	return &banks.BankTrxData{
-		UniqueIdentifier: u.UniqueIdentifier,
-		Date:             u.Date,
+		UniqueIdentifier: u.BCAUniqueIdentifier,
+		Date:             u.BCADate,
 		Type:             u.GetType(),
-		Bank:             u.Bank,
+		Bank:             u.BCABank,
 		FilePath:         "",
 		Amount:           u.GetAbsAmount(),
 	}
@@ -127,32 +124,5 @@ func (d *BankParser) ToBankTrxData(ctx context.Context, filePath string) (return
 		returnData = append(returnData, bankTrxData)
 	}
 
-	return
-}
-
-func (d *BankParser) ToSql(ctx context.Context, filePath string, sqlPattern string) (returnData string, err error) {
-	data, err := d.ToBankTrxData(ctx, filePath)
-	if err != nil {
-		log.AddErr(ctx, err)
-		return returnData, err
-	}
-
-	var buffer bytes.Buffer
-
-	lo.ForEach(data, func(d *banks.BankTrxData, _ int) {
-		buffer.WriteString(
-			fmt.Sprintf(
-				sqlPattern,
-				d.UniqueIdentifier,
-				d.Date,
-				d.Bank,
-				d.Type,
-				d.Amount,
-				d.FilePath,
-			),
-		)
-	})
-
-	returnData = buffer.String()
 	return
 }
