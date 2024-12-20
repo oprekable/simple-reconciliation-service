@@ -33,10 +33,10 @@ func NewDB(
 func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
 	stmtData := []_helper.StmtData{
 		{
-			Query: QueryDropTableArguments,
+			Query: QueryDropTableBanks,
 		},
 		{
-			Query: QueryDropTableBanks,
+			Query: QueryDropTableArguments,
 		},
 		{
 			Query: QueryDropTableBaseData,
@@ -87,12 +87,7 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 	tx, err = d.db.BeginTx(ctx, nil)
 
 	defer func() {
-		if err != nil {
-			err = errors.Wrap(tx.Rollback(), err.Error())
-		} else {
-			err = tx.Commit()
-		}
-
+		err = _helper.CommitOrRollback(ctx, tx, err)
 		log.Err(
 			ctx,
 			"[sample.NewDB] Exec Pre method in db",
@@ -154,12 +149,7 @@ func (d *DB) Post(ctx context.Context) (err error) {
 	tx, err = d.db.BeginTx(ctx, nil)
 
 	defer func() {
-		if err != nil {
-			err = errors.Wrap(tx.Rollback(), err.Error())
-		} else {
-			err = tx.Commit()
-		}
-
+		err = _helper.CommitOrRollback(ctx, tx, err)
 		log.Err(
 			ctx,
 			"[sample.NewDB] Exec Post method in db",

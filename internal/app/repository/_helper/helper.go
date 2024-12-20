@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"github.com/aaronjan/hunch"
+	"github.com/pkg/errors"
 )
 
 type StmtData struct {
@@ -38,6 +39,16 @@ func ExecTxQueries(ctx context.Context, db *sql.DB, tx *sql.Tx, stmtData []StmtD
 		ctx,
 		executableInSequence...,
 	)
+
+	return
+}
+
+func CommitOrRollback(ctx context.Context, tx *sql.Tx, er error) (err error) {
+	if er != nil {
+		err = errors.Wrap(tx.Rollback(), er.Error())
+	} else {
+		err = tx.Commit()
+	}
 
 	return
 }

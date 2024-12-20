@@ -14,7 +14,6 @@ import (
 
 	"github.com/aaronjan/hunch"
 	"github.com/blockloop/scan/v2"
-	"github.com/pkg/errors"
 )
 
 type DB struct {
@@ -95,12 +94,7 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 	tx, err = d.db.BeginTx(ctx, nil)
 
 	defer func() {
-		if err != nil {
-			err = errors.Wrap(tx.Rollback(), err.Error())
-		} else {
-			err = tx.Commit()
-		}
-
+		err = _helper.CommitOrRollback(ctx, tx, err)
 		log.Err(
 			ctx,
 			"[process.NewDB] Exec Pre method in db",
@@ -130,12 +124,7 @@ func (d *DB) ImportSystemTrx(ctx context.Context, data []*systems.SystemTrxData)
 	tx, err = d.db.BeginTx(ctx, nil)
 
 	defer func() {
-		if err != nil {
-			err = errors.Wrap(tx.Rollback(), err.Error())
-		} else {
-			err = tx.Commit()
-		}
-
+		err = _helper.CommitOrRollback(ctx, tx, err)
 		log.Err(
 			ctx,
 			fmt.Sprintf("[process.NewDB] ImportSystemTrx method to db (%d data)", len(data)),
@@ -147,27 +136,24 @@ func (d *DB) ImportSystemTrx(ctx context.Context, data []*systems.SystemTrxData)
 		return
 	}
 
-	var jsonData string
 	_, err = hunch.Waterfall(
 		ctx,
 		func(c context.Context, _ interface{}) (interface{}, error) {
 			return json.Marshal(data)
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				jsonData = string(i.([]byte))
+			stmtData := []_helper.StmtData{
+				{
+					Query: QueryInsertTableSystemTrx,
+					Args: func() []any {
+						return []any{
+							string(i.([]byte)),
+						}
+					}(),
+				},
 			}
 
-			return nil, nil
-		},
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			return d.db.PrepareContext(c, QueryInsertTableSystemTrx)
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			return tx.StmtContext(c, i.(*sql.Stmt)).ExecContext( //nolint:sqlclosecheck
-				c,
-				jsonData,
-			)
+			return nil, _helper.ExecTxQueries(ctx, d.db, tx, stmtData)
 		},
 	)
 
@@ -179,12 +165,7 @@ func (d *DB) ImportBankTrx(ctx context.Context, data []*banks.BankTrxData) (err 
 	tx, err = d.db.BeginTx(ctx, nil)
 
 	defer func() {
-		if err != nil {
-			err = errors.Wrap(tx.Rollback(), err.Error())
-		} else {
-			err = tx.Commit()
-		}
-
+		err = _helper.CommitOrRollback(ctx, tx, err)
 		log.Err(
 			ctx,
 			fmt.Sprintf("[process.NewDB] Exec ImportBankTrx method to db (%d data)", len(data)),
@@ -196,27 +177,24 @@ func (d *DB) ImportBankTrx(ctx context.Context, data []*banks.BankTrxData) (err 
 		return
 	}
 
-	var jsonData string
 	_, err = hunch.Waterfall(
 		ctx,
 		func(c context.Context, _ interface{}) (interface{}, error) {
 			return json.Marshal(data)
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				jsonData = string(i.([]byte))
+			stmtData := []_helper.StmtData{
+				{
+					Query: QueryInsertTableBankTrx,
+					Args: func() []any {
+						return []any{
+							string(i.([]byte)),
+						}
+					}(),
+				},
 			}
 
-			return nil, nil
-		},
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			return d.db.PrepareContext(c, QueryInsertTableBankTrx)
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			return tx.StmtContext(c, i.(*sql.Stmt)).ExecContext( //nolint:sqlclosecheck
-				c,
-				jsonData,
-			)
+			return nil, _helper.ExecTxQueries(ctx, d.db, tx, stmtData)
 		},
 	)
 
@@ -228,12 +206,7 @@ func (d *DB) GenerateReconciliationMap(ctx context.Context, minAmount float64, m
 	tx, err = d.db.BeginTx(ctx, nil)
 
 	defer func() {
-		if err != nil {
-			err = errors.Wrap(tx.Rollback(), err.Error())
-		} else {
-			err = tx.Commit()
-		}
-
+		err = _helper.CommitOrRollback(ctx, tx, err)
 		log.Err(
 			ctx,
 			fmt.Sprintf("[process.NewDB] Exec GenerateReconciliationMap method to db (Amount %f - %f)", minAmount, maxAmount),
@@ -247,15 +220,20 @@ func (d *DB) GenerateReconciliationMap(ctx context.Context, minAmount float64, m
 
 	_, err = hunch.Waterfall(
 		ctx,
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			return d.db.PrepareContext(c, QueryInsertTableReconciliationMap)
-		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			return tx.StmtContext(c, i.(*sql.Stmt)).ExecContext( //nolint:sqlclosecheck
-				c,
-				minAmount,
-				maxAmount,
-			)
+			stmtData := []_helper.StmtData{
+				{
+					Query: QueryInsertTableReconciliationMap,
+					Args: func() []any {
+						return []any{
+							minAmount,
+							maxAmount,
+						}
+					}(),
+				},
+			}
+
+			return nil, _helper.ExecTxQueries(ctx, d.db, tx, stmtData)
 		},
 	)
 
@@ -295,12 +273,7 @@ func (d *DB) Post(ctx context.Context) (err error) {
 	tx, err = d.db.BeginTx(ctx, nil)
 
 	defer func() {
-		if err != nil {
-			err = errors.Wrap(tx.Rollback(), err.Error())
-		} else {
-			err = tx.Commit()
-		}
-
+		err = _helper.CommitOrRollback(ctx, tx, err)
 		log.Err(
 			ctx,
 			"[process.NewDB] Exec Post method in db",
