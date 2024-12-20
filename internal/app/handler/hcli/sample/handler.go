@@ -3,6 +3,8 @@ package sample
 import (
 	"context"
 	"fmt"
+	"github.com/olekukonko/tablewriter"
+	"github.com/spf13/afero"
 	"os"
 	"simple-reconciliation-service/cmd/root"
 	"simple-reconciliation-service/internal/app/component"
@@ -11,10 +13,6 @@ import (
 	"simple-reconciliation-service/internal/app/service"
 	"simple-reconciliation-service/internal/pkg/utils/memstats"
 	"strconv"
-	"strings"
-
-	"github.com/olekukonko/tablewriter"
-	"github.com/spf13/afero"
 )
 
 const name = "sample"
@@ -34,50 +32,23 @@ func (h *Handler) Exec() (err error) {
 		return nil
 	}
 	bar := _helper.InitProgressBar()
-
 	formatText := "-%s --%s"
-	args := [][]string{
-		{
-			fmt.Sprintf(formatText, root.FlagFromDateShort, root.FlagFromDate),
-			root.FlagFromDateValue,
+	args := _helper.InitCommonArgs(
+		[][]string{
+			{
+				fmt.Sprintf(formatText, root.FlagTotalDataSampleToGenerateShort, root.FlagTotalDataSampleToGenerate),
+				strconv.FormatInt(root.FlagTotalDataSampleToGenerateValue, 10),
+			},
+			{
+				fmt.Sprintf(formatText, root.FlagPercentageMatchSampleToGenerateShort, root.FlagPercentageMatchSampleToGenerate),
+				strconv.Itoa(root.FlagPercentageMatchSampleToGenerateValue),
+			},
+			{
+				fmt.Sprintf(formatText, root.FlagIsDeleteCurrentSampleDirectoryShort, root.FlagIsDeleteCurrentSampleDirectory),
+				strconv.FormatBool(root.FlagIsDeleteCurrentSampleDirectoryValue),
+			},
 		},
-		{
-			fmt.Sprintf(formatText, root.FlagToDateShort, root.FlagToDate),
-			root.FlagToDateValue,
-		},
-		{
-			fmt.Sprintf(formatText, root.FlagSystemTRXPathShort, root.FlagSystemTRXPath),
-			root.FlagSystemTRXPathValue,
-		},
-		{
-			fmt.Sprintf(formatText, root.FlagBankTRXPathShort, root.FlagBankTRXPath),
-			root.FlagBankTRXPathValue,
-		},
-		{
-			fmt.Sprintf(formatText, root.FlagListBankShort, root.FlagListBank),
-			strings.Join(root.FlagListBankValue, ","),
-		},
-		{
-			fmt.Sprintf(formatText, root.FlagTotalDataSampleToGenerateShort, root.FlagTotalDataSampleToGenerate),
-			strconv.FormatInt(root.FlagTotalDataSampleToGenerateValue, 10),
-		},
-		{
-			fmt.Sprintf(formatText, root.FlagPercentageMatchSampleToGenerateShort, root.FlagPercentageMatchSampleToGenerate),
-			strconv.Itoa(root.FlagPercentageMatchSampleToGenerateValue),
-		},
-		{
-			fmt.Sprintf(formatText, root.FlagIsDeleteCurrentSampleDirectoryShort, root.FlagIsDeleteCurrentSampleDirectory),
-			strconv.FormatBool(root.FlagIsDeleteCurrentSampleDirectoryValue),
-		},
-		{
-			fmt.Sprintf(formatText, root.FlagIsVerboseShort, root.FlagIsVerbose),
-			strconv.FormatBool(root.FlagIsVerboseValue),
-		},
-		{
-			fmt.Sprintf(formatText, root.FlagIsDebugShort, root.FlagIsDebug),
-			strconv.FormatBool(root.FlagIsDebugValue),
-		},
-	}
+	)
 
 	fmt.Println("")
 	tableArgs := tablewriter.NewWriter(os.Stdout)
