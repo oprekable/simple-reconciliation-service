@@ -12,13 +12,13 @@ func Runner(cmd *cobra.Command, _ []string) (er error) {
 }
 
 func PersistentPreRunner(_ *cobra.Command, _ []string) (er error) {
-	fromDate, errFrom := time.Parse("2006-01-02", FlagFromDateValue)
+	fromDate, errFrom := time.Parse(DateFormatString, FlagFromDateValue)
 
 	if errFrom != nil {
 		return fmt.Errorf("failed to parse flag '-%s' '--%s': %v", FlagFromDateShort, FlagFromDate, FlagFromDateValue)
 	}
 
-	toDate, errTo := time.Parse("2006-01-02", FlagToDateValue)
+	toDate, errTo := time.Parse(DateFormatString, FlagToDateValue)
 	if errTo != nil {
 		return fmt.Errorf("failed to parse flag '-%s' '--%s': %v", FlagToDateShort, FlagToDate, FlagToDateValue)
 	}

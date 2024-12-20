@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	DateFormatString                         string = "2006-01-02"
 	FlagSystemTRXPath                        string = "systemtrxpath"
 	FlagSystemTRXPathShort                   string = "s"
 	FlagSystemTRXPathUsage                   string = "Path location of System Transaction directory"
