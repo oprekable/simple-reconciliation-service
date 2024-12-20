@@ -55,6 +55,8 @@ func RunnerSubCommand(cmd *cobra.Command, _ []string, dBPath csqlite.DBPath) (er
 	}
 
 	app.GetComponents().Config.Data.Reconciliation.FromDate = fromDate
+	app.GetComponents().Config.Data.Reconciliation.TotalData = root.FlagTotalDataSampleToGenerateValue
+	app.GetComponents().Config.Data.Reconciliation.PercentageMatch = root.FlagPercentageMatchSampleToGenerateValue
 	app.Start()
 	return nil
 }
