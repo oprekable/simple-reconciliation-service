@@ -3,7 +3,6 @@ package process
 import (
 	"context"
 	"fmt"
-	"github.com/dustin/go-humanize"
 	"os"
 	"simple-reconciliation-service/cmd/root"
 	"simple-reconciliation-service/internal/app/component"
@@ -11,6 +10,8 @@ import (
 	"simple-reconciliation-service/internal/app/repository"
 	"simple-reconciliation-service/internal/app/service"
 	"simple-reconciliation-service/internal/pkg/utils/memstats"
+
+	"github.com/dustin/go-humanize"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/afero"

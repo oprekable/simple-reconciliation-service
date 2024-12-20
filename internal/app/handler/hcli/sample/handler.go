@@ -3,8 +3,6 @@ package sample
 import (
 	"context"
 	"fmt"
-	"github.com/olekukonko/tablewriter"
-	"github.com/spf13/afero"
 	"os"
 	"simple-reconciliation-service/cmd/root"
 	"simple-reconciliation-service/internal/app/component"
@@ -13,6 +11,9 @@ import (
 	"simple-reconciliation-service/internal/app/service"
 	"simple-reconciliation-service/internal/pkg/utils/memstats"
 	"strconv"
+
+	"github.com/olekukonko/tablewriter"
+	"github.com/spf13/afero"
 )
 
 const name = "sample"

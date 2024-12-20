@@ -16,15 +16,7 @@ import (
 )
 
 type DB struct {
-	db                           *sql.DB
-	stmtDropTableArguments       *sql.Stmt
-	stmtDropTableBanks           *sql.Stmt
-	stmtDropTableBaseData        *sql.Stmt
-	stmtCreateTableArguments     *sql.Stmt
-	stmtCreateTableBanks         *sql.Stmt
-	stmtCreateTableBaseData      *sql.Stmt
-	stmtCreateIndexTableBaseData *sql.Stmt
-	stmtGetTrxData               *sql.Stmt
+	db *sql.DB
 }
 
 var _ Repository = (*DB)(nil)
@@ -38,51 +30,52 @@ func NewDB(
 }
 
 func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
+	var executableInSequence []hunch.ExecutableInSequence
+	stmtData := []string{
+		QueryDropTableArguments,
+		QueryDropTableBanks,
+		QueryDropTableBaseData,
+	}
+
+	for k := range stmtData {
+		executableInSequence = append(
+			executableInSequence,
+			func(c context.Context, _ interface{}) (interface{}, error) {
+				i, e := d.db.PrepareContext(
+					c,
+					stmtData[k],
+				)
+
+				if e != nil {
+					return nil, e
+				}
+
+				return tx.StmtContext(c, i).ExecContext( //nolint:sqlclosecheck
+					c,
+				)
+			},
+		)
+	}
+
 	_, err = hunch.Waterfall(
 		ctx,
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			if d.stmtDropTableArguments == nil {
-				d.stmtDropTableArguments, e = d.db.PrepareContext(c, QueryDropTableArguments)
-			}
-
-			return nil, e
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			return tx.StmtContext(c, d.stmtDropTableArguments).ExecContext( //nolint:sqlclosecheck
-				c,
-			)
-		},
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			if d.stmtDropTableBanks == nil {
-				d.stmtDropTableBanks, e = d.db.PrepareContext(c, QueryDropTableBanks)
-			}
-
-			return nil, e
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			return tx.StmtContext(c, d.stmtDropTableBanks).ExecContext( //nolint:sqlclosecheck
-				c,
-			)
-		},
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			if d.stmtDropTableBaseData == nil {
-				d.stmtDropTableBaseData, e = d.db.PrepareContext(c, QueryDropTableBaseData)
-			}
-
-			return nil, e
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			return tx.StmtContext(c, d.stmtDropTableBaseData).ExecContext( //nolint:sqlclosecheck
-				c,
-			)
-		},
+		executableInSequence...,
 	)
 
 	return
 }
 
 func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, toDate time.Time, limitTrxData int64, matchPercentage int) (err error) {
+	var tx *sql.Tx
+	tx, err = d.db.BeginTx(ctx, nil)
+
 	defer func() {
+		if err != nil {
+			err = errors.Wrap(tx.Rollback(), err.Error())
+		} else {
+			err = tx.Commit()
+		}
+
 		log.Err(
 			ctx,
 			"[sample.NewDB] Exec Pre method in db",
@@ -90,8 +83,6 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 		)
 	}()
 
-	var tx *sql.Tx
-	tx, err = d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return
 	}
@@ -102,78 +93,50 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 			return nil, d.dropTables(c, tx)
 		},
 		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			if d.stmtCreateTableArguments == nil {
-				d.stmtCreateTableArguments, e = d.db.PrepareContext(c, QueryCreateTableArguments)
-			}
-
-			return nil, e
+			return d.db.PrepareContext(c, QueryCreateTableArguments)
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			return tx.StmtContext(c, d.stmtCreateTableArguments).ExecContext( //nolint:sqlclosecheck
+			dateStringFormat := "2006-01-02"
+			return tx.StmtContext(c, i.(*sql.Stmt)).ExecContext( //nolint:sqlclosecheck
 				c,
-				startDate.Format("2006-01-02"),
-				toDate.Format("2006-01-02"),
+				startDate.Format(dateStringFormat),
+				toDate.Format(dateStringFormat),
 				strconv.FormatInt(limitTrxData, 10),
 				strconv.Itoa(matchPercentage),
 			)
 		},
 		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			if d.stmtCreateTableBanks == nil {
-				d.stmtCreateTableBanks, e = d.db.PrepareContext(c, QueryCreateTableBanks)
-			}
-
-			return nil, e
+			return d.db.PrepareContext(c, QueryCreateTableBanks)
 		},
-		func(c context.Context, i interface{}) (interface{}, error) {
+		func(c context.Context, i interface{}) (r interface{}, e error) {
 			b := new(strings.Builder)
-			err := json.NewEncoder(b).Encode(listBank)
-			if err != nil {
-				return nil, err
+			e = json.NewEncoder(b).Encode(listBank)
+			if e != nil {
+				return nil, e
 			}
 
-			return tx.StmtContext(c, d.stmtCreateTableBanks).ExecContext( //nolint:sqlclosecheck
+			return tx.StmtContext(c, i.(*sql.Stmt)).ExecContext( //nolint:sqlclosecheck
 				c,
 				b.String(),
 			)
 		},
 		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			if d.stmtCreateTableBaseData == nil {
-				d.stmtCreateTableBaseData, e = d.db.PrepareContext(c, QueryCreateTableBaseData)
-			}
-
-			return nil, e
+			return d.db.PrepareContext(c, QueryCreateTableBaseData)
 		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			b := new(strings.Builder)
-			err := json.NewEncoder(b).Encode(listBank)
-			if err != nil {
-				return nil, err
-			}
-
-			return tx.StmtContext(c, d.stmtCreateTableBaseData).ExecContext( //nolint:sqlclosecheck
+		func(c context.Context, i interface{}) (r interface{}, e error) {
+			return tx.StmtContext(c, i.(*sql.Stmt)).ExecContext( //nolint:sqlclosecheck
 				c,
-				b.String(),
 			)
 		},
 		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			if d.stmtCreateIndexTableBaseData == nil {
-				d.stmtCreateIndexTableBaseData, e = d.db.PrepareContext(c, QueryCreateIndexTableBaseData)
-			}
-
-			return nil, e
+			return d.db.PrepareContext(c, QueryCreateIndexTableBaseData)
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			return tx.StmtContext(c, d.stmtCreateIndexTableBaseData).ExecContext( //nolint:sqlclosecheck
+			return tx.StmtContext(c, i.(*sql.Stmt)).ExecContext( //nolint:sqlclosecheck
 				c,
 			)
 		},
 	)
-
-	if err != nil {
-		err = errors.Wrap(tx.Rollback(), err.Error())
-	} else {
-		err = tx.Commit()
-	}
 
 	return
 }
@@ -190,14 +153,10 @@ func (d *DB) GetTrx(ctx context.Context) (returnData []TrxData, err error) {
 	_, err = hunch.Waterfall(
 		ctx,
 		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			if d.stmtGetTrxData == nil {
-				d.stmtGetTrxData, e = d.db.PrepareContext(c, QueryGetTrxData)
-			}
-
-			return nil, e
+			return d.db.PrepareContext(c, QueryGetTrxData)
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			return d.stmtGetTrxData.QueryContext(
+			return i.(*sql.Stmt).QueryContext(
 				c,
 			)
 		},
@@ -215,7 +174,16 @@ func (d *DB) GetTrx(ctx context.Context) (returnData []TrxData, err error) {
 }
 
 func (d *DB) Post(ctx context.Context) (err error) {
+	var tx *sql.Tx
+	tx, err = d.db.BeginTx(ctx, nil)
+
 	defer func() {
+		if err != nil {
+			err = errors.Wrap(tx.Rollback(), err.Error())
+		} else {
+			err = tx.Commit()
+		}
+
 		log.Err(
 			ctx,
 			"[sample.NewDB] Exec Post method in db",
@@ -223,8 +191,6 @@ func (d *DB) Post(ctx context.Context) (err error) {
 		)
 	}()
 
-	var tx *sql.Tx
-	tx, err = d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return
 	}
@@ -235,12 +201,6 @@ func (d *DB) Post(ctx context.Context) (err error) {
 			return nil, d.dropTables(c, tx)
 		},
 	)
-
-	if err != nil {
-		err = errors.Wrap(tx.Rollback(), err.Error())
-	} else {
-		err = tx.Commit()
-	}
 
 	return
 }
