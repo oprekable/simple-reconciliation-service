@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"simple-reconciliation-service/internal/app/err/core"
+	"simple-reconciliation-service/internal/app/repository/_helper"
 	"simple-reconciliation-service/internal/pkg/utils/log"
 	"strconv"
 	"strings"
@@ -14,11 +15,6 @@ import (
 	"github.com/blockloop/scan/v2"
 	"github.com/pkg/errors"
 )
-
-type StmtData struct {
-	Query string
-	Args  []any
-}
 
 type DB struct {
 	db *sql.DB
@@ -35,8 +31,7 @@ func NewDB(
 }
 
 func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
-	var executableInSequence []hunch.ExecutableInSequence
-	stmtData := []StmtData{
+	stmtData := []_helper.StmtData{
 		{
 			Query: QueryDropTableArguments,
 		},
@@ -48,37 +43,11 @@ func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
 		},
 	}
 
-	for k := range stmtData {
-		executableInSequence = append(
-			executableInSequence,
-			func(c context.Context, _ interface{}) (interface{}, error) {
-				i, e := d.db.PrepareContext(
-					c,
-					stmtData[k].Query,
-				)
-
-				if e != nil {
-					return nil, e
-				}
-
-				return tx.StmtContext(c, i).ExecContext( //nolint:sqlclosecheck
-					c,
-				)
-			},
-		)
-	}
-
-	_, err = hunch.Waterfall(
-		ctx,
-		executableInSequence...,
-	)
-
-	return
+	return _helper.ExecTxQueries(ctx, d.db, tx, stmtData)
 }
 
 func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, startDate time.Time, toDate time.Time, limitTrxData int64, matchPercentage int) (err error) {
-	var executableInSequence []hunch.ExecutableInSequence
-	stmtData := []StmtData{
+	stmtData := []_helper.StmtData{
 		{
 			Query: QueryCreateTableArguments,
 			Args: func() []any {
@@ -110,33 +79,7 @@ func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, st
 		},
 	}
 
-	for k := range stmtData {
-		executableInSequence = append(
-			executableInSequence,
-			func(c context.Context, _ interface{}) (interface{}, error) {
-				i, e := d.db.PrepareContext(
-					c,
-					stmtData[k].Query,
-				)
-
-				if e != nil {
-					return nil, e
-				}
-
-				return tx.StmtContext(c, i).ExecContext( //nolint:sqlclosecheck
-					c,
-					stmtData[k].Args...,
-				)
-			},
-		)
-	}
-
-	_, err = hunch.Waterfall(
-		ctx,
-		executableInSequence...,
-	)
-
-	return
+	return _helper.ExecTxQueries(ctx, d.db, tx, stmtData)
 }
 
 func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, toDate time.Time, limitTrxData int64, matchPercentage int) (err error) {
