@@ -36,12 +36,7 @@ func NewDB(
 func (d *DB) dropTableWith(ctx context.Context, methodName string, extraExec hunch.ExecutableInSequence) (err error) {
 	var tx *sql.Tx
 	defer func() {
-		err = _helper.CommitOrRollback(tx, err)
-		log.Err(
-			ctx,
-			fmt.Sprintf("[process.NewDB] Exec %s method in db", methodName),
-			err,
-		)
+		log.Err(ctx, fmt.Sprintf("[process.NewDB] Exec %s method in db", methodName), _helper.CommitOrRollback(tx, err))
 	}()
 
 	_, err = hunch.Waterfall(
@@ -143,12 +138,7 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 func (d *DB) importInterface(ctx context.Context, methodName string, query string, data interface{}) (err error) {
 	var tx *sql.Tx
 	defer func() {
-		err = _helper.CommitOrRollback(tx, err)
-		log.Err(
-			ctx,
-			fmt.Sprintf("[process.NewDB] %s method to db (%d data)", methodName, reflect.ValueOf(data).Len()),
-			err,
-		)
+		log.Err(ctx, fmt.Sprintf("[process.NewDB] %s method to db (%d data)", methodName, reflect.ValueOf(data).Len()), _helper.CommitOrRollback(tx, err))
 	}()
 
 	_, err = hunch.Waterfall(
@@ -191,12 +181,7 @@ func (d *DB) ImportBankTrx(ctx context.Context, data []*banks.BankTrxData) (err 
 func (d *DB) GenerateReconciliationMap(ctx context.Context, minAmount float64, maxAmount float64) (err error) {
 	var tx *sql.Tx
 	defer func() {
-		err = _helper.CommitOrRollback(tx, err)
-		log.Err(
-			ctx,
-			fmt.Sprintf("[process.NewDB] Exec GenerateReconciliationMap method to db (Amount %f - %f)", minAmount, maxAmount),
-			err,
-		)
+		log.Err(ctx, fmt.Sprintf("[process.NewDB] Exec GenerateReconciliationMap method to db (Amount %f - %f)", minAmount, maxAmount), _helper.CommitOrRollback(tx, err))
 	}()
 
 	_, err = hunch.Waterfall(
@@ -228,11 +213,7 @@ func (d *DB) GenerateReconciliationMap(ctx context.Context, minAmount float64, m
 
 func (d *DB) GetReconciliationSummary(ctx context.Context) (returnData ReconciliationSummary, err error) {
 	defer func() {
-		log.Err(
-			ctx,
-			"[process.NewDB] Exec GetReconciliationSummary method from db",
-			err,
-		)
+		log.Err(ctx, "[process.NewDB] Exec GetReconciliationSummary method from db", err)
 	}()
 
 	_, err = hunch.Waterfall(

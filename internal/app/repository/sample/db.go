@@ -99,12 +99,7 @@ func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, st
 func (d *DB) postWith(ctx context.Context, methodName string, extraExec hunch.ExecutableInSequence) (err error) {
 	var tx *sql.Tx
 	defer func() {
-		err = _helper.CommitOrRollback(tx, err)
-		log.Err(
-			ctx,
-			fmt.Sprintf("[sample.NewDB] Exec %s method in db", methodName),
-			err,
-		)
+		log.Err(ctx, fmt.Sprintf("[sample.NewDB] Exec %s method in db", methodName), _helper.CommitOrRollback(tx, err))
 	}()
 
 	_, err = hunch.Waterfall(
@@ -136,11 +131,7 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 
 func (d *DB) GetTrx(ctx context.Context) (returnData []TrxData, err error) {
 	defer func() {
-		log.Err(
-			ctx,
-			"[sample.NewDB] Exec GetData method in db",
-			err,
-		)
+		log.Err(ctx, "[sample.NewDB] Exec GetData method in db", err)
 	}()
 
 	_, err = hunch.Waterfall(
