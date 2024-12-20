@@ -54,40 +54,43 @@ func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
 }
 
 func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, startDate time.Time, toDate time.Time) (err error) {
-	stmtData := []_helper.StmtData{
-		{
-			Query: QueryCreateTableArguments,
-			Args: func() []any {
-				dateStringFormat := "2006-01-02"
-				return []any{
-					startDate.Format(dateStringFormat),
-					toDate.Format(dateStringFormat),
-				}
-			}(),
-		},
-		{
-			Query: QueryCreateTableBanks,
-			Args: func() []any {
-				b := new(strings.Builder)
-				_ = json.NewEncoder(b).Encode(listBank)
+	return _helper.ExecTxQueries(
+		ctx,
+		d.db,
+		tx,
+		[]_helper.StmtData{
+			{
+				Query: QueryCreateTableArguments,
+				Args: func() []any {
+					dateStringFormat := "2006-01-02"
+					return []any{
+						startDate.Format(dateStringFormat),
+						toDate.Format(dateStringFormat),
+					}
+				}(),
+			},
+			{
+				Query: QueryCreateTableBanks,
+				Args: func() []any {
+					b := new(strings.Builder)
+					_ = json.NewEncoder(b).Encode(listBank)
 
-				return []any{
-					b.String(),
-				}
-			}(),
+					return []any{
+						b.String(),
+					}
+				}(),
+			},
+			{
+				Query: QueryCreateTableSystemTrx,
+			},
+			{
+				Query: QueryCreateTableBankTrx,
+			},
+			{
+				Query: QueryCreateTableReconciliationMap,
+			},
 		},
-		{
-			Query: QueryCreateTableSystemTrx,
-		},
-		{
-			Query: QueryCreateTableBankTrx,
-		},
-		{
-			Query: QueryCreateTableReconciliationMap,
-		},
-	}
-
-	return _helper.ExecTxQueries(ctx, d.db, tx, stmtData)
+	)
 }
 
 func (d *DB) postWith(ctx context.Context, methodName string, extraExec hunch.ExecutableInSequence) (err error) {
