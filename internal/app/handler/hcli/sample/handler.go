@@ -6,15 +6,14 @@ import (
 	"os"
 	"simple-reconciliation-service/cmd/root"
 	"simple-reconciliation-service/internal/app/component"
+	"simple-reconciliation-service/internal/app/handler/hcli/_helper"
 	"simple-reconciliation-service/internal/app/repository"
 	"simple-reconciliation-service/internal/app/service"
 	"simple-reconciliation-service/internal/pkg/utils/memstats"
 	"strconv"
 	"strings"
 
-	"github.com/k0kubun/go-ansi"
 	"github.com/olekukonko/tablewriter"
-	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/afero"
 )
 
@@ -34,18 +33,7 @@ func (h *Handler) Exec() (err error) {
 	if h.comp == nil || h.svc == nil || h.repo == nil {
 		return nil
 	}
-	bar := progressbar.NewOptions(-1,
-		progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
-		progressbar.OptionEnableColorCodes(true),
-		progressbar.OptionSetWidth(15),
-		progressbar.OptionSpinnerType(17),
-		progressbar.OptionSetTheme(progressbar.Theme{
-			Saucer:        "[green]=[reset]",
-			SaucerHead:    "[green]>[reset]",
-			SaucerPadding: " ",
-			BarStart:      "[",
-			BarEnd:        "]",
-		}))
+	bar := _helper.InitProgressBar()
 
 	formatText := "-%s --%s"
 	args := [][]string{
