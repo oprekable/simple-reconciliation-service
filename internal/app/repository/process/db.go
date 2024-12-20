@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"simple-reconciliation-service/internal/app/repository/_helper"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/systems"
@@ -89,20 +90,16 @@ func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, st
 	return _helper.ExecTxQueries(ctx, d.db, tx, stmtData)
 }
 
-func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, toDate time.Time) (err error) {
+func (d *DB) postWith(ctx context.Context, methodName string, extraExec hunch.ExecutableInSequence) (err error) {
 	var tx *sql.Tx
 	defer func() {
 		err = _helper.CommitOrRollback(ctx, tx, err)
 		log.Err(
 			ctx,
-			"[process.NewDB] Exec Pre method in db",
+			fmt.Sprintf("[process.NewDB] Exec %s method in db", methodName),
 			err,
 		)
 	}()
-
-	if err != nil {
-		return
-	}
 
 	_, err = hunch.Waterfall(
 		ctx,
@@ -111,10 +108,59 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 			return nil, e
 		},
 		func(c context.Context, _ interface{}) (interface{}, error) {
-			return nil, d.dropTables(c, tx)
+			return tx, d.dropTables(c, tx)
+		},
+		extraExec,
+	)
+
+	return
+}
+
+func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, toDate time.Time) (err error) {
+	extraExec := func(c context.Context, i interface{}) (interface{}, error) {
+		return nil, d.createTables(c, i.(*sql.Tx), listBank, startDate, toDate)
+	}
+
+	return d.postWith(
+		ctx,
+		"Pre",
+		extraExec,
+	)
+}
+
+func (d *DB) importInterface(ctx context.Context, methodName string, query string, data interface{}) (err error) {
+	var tx *sql.Tx
+	defer func() {
+		err = _helper.CommitOrRollback(ctx, tx, err)
+		log.Err(
+			ctx,
+			fmt.Sprintf("[process.NewDB] %s method to db (%d data)", methodName, reflect.ValueOf(data).Len()),
+			err,
+		)
+	}()
+
+	_, err = hunch.Waterfall(
+		ctx,
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
+			tx, e = d.db.BeginTx(ctx, nil)
+			return nil, e
 		},
 		func(c context.Context, _ interface{}) (interface{}, error) {
-			return nil, d.createTables(c, tx, listBank, startDate, toDate)
+			return json.Marshal(data)
+		},
+		func(c context.Context, i interface{}) (interface{}, error) {
+			stmtData := []_helper.StmtData{
+				{
+					Query: query,
+					Args: func() []any {
+						return []any{
+							string(i.([]byte)),
+						}
+					}(),
+				},
+			}
+
+			return nil, _helper.ExecTxQueries(ctx, d.db, tx, stmtData)
 		},
 	)
 
@@ -122,81 +168,11 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 }
 
 func (d *DB) ImportSystemTrx(ctx context.Context, data []*systems.SystemTrxData) (err error) {
-	var tx *sql.Tx
-	defer func() {
-		err = _helper.CommitOrRollback(ctx, tx, err)
-		log.Err(
-			ctx,
-			fmt.Sprintf("[process.NewDB] ImportSystemTrx method to db (%d data)", len(data)),
-			err,
-		)
-	}()
-
-	_, err = hunch.Waterfall(
-		ctx,
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			tx, e = d.db.BeginTx(ctx, nil)
-			return nil, e
-		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
-			return json.Marshal(data)
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			stmtData := []_helper.StmtData{
-				{
-					Query: QueryInsertTableSystemTrx,
-					Args: func() []any {
-						return []any{
-							string(i.([]byte)),
-						}
-					}(),
-				},
-			}
-
-			return nil, _helper.ExecTxQueries(ctx, d.db, tx, stmtData)
-		},
-	)
-
-	return
+	return d.importInterface(ctx, "ImportSystemTrx", QueryInsertTableSystemTrx, data)
 }
 
 func (d *DB) ImportBankTrx(ctx context.Context, data []*banks.BankTrxData) (err error) {
-	var tx *sql.Tx
-	defer func() {
-		err = _helper.CommitOrRollback(ctx, tx, err)
-		log.Err(
-			ctx,
-			fmt.Sprintf("[process.NewDB] Exec ImportBankTrx method to db (%d data)", len(data)),
-			err,
-		)
-	}()
-
-	_, err = hunch.Waterfall(
-		ctx,
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			tx, e = d.db.BeginTx(ctx, nil)
-			return nil, e
-		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
-			return json.Marshal(data)
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			stmtData := []_helper.StmtData{
-				{
-					Query: QueryInsertTableBankTrx,
-					Args: func() []any {
-						return []any{
-							string(i.([]byte)),
-						}
-					}(),
-				},
-			}
-
-			return nil, _helper.ExecTxQueries(ctx, d.db, tx, stmtData)
-		},
-	)
-
-	return
+	return d.importInterface(ctx, "ImportBankTrx", QueryInsertTableBankTrx, data)
 }
 
 func (d *DB) GenerateReconciliationMap(ctx context.Context, minAmount float64, maxAmount float64) (err error) {
@@ -265,28 +241,15 @@ func (d *DB) GetReconciliationSummary(ctx context.Context) (returnData Reconcili
 }
 
 func (d *DB) Post(ctx context.Context) (err error) {
-	var tx *sql.Tx
-	defer func() {
-		err = _helper.CommitOrRollback(ctx, tx, err)
-		log.Err(
-			ctx,
-			"[process.NewDB] Exec Post method in db",
-			err,
-		)
-	}()
+	extraExec := func(c context.Context, i interface{}) (interface{}, error) {
+		return nil, nil
+	}
 
-	_, err = hunch.Waterfall(
+	return d.postWith(
 		ctx,
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			tx, e = d.db.BeginTx(ctx, nil)
-			return nil, e
-		},
-		func(c context.Context, _ interface{}) (interface{}, error) {
-			return nil, d.dropTables(c, tx)
-		},
+		"Post",
+		extraExec,
 	)
-
-	return
 }
 
 func (d *DB) Close() (err error) {
