@@ -18,7 +18,8 @@ import (
 )
 
 type DB struct {
-	db *sql.DB
+	db      *sql.DB
+	stmtMap map[string]*sql.Stmt
 }
 
 var _ Repository = (*DB)(nil)
@@ -27,24 +28,28 @@ func NewDB(
 	db *sql.DB,
 ) (*DB, error) {
 	return &DB{
-		db: db,
+		db:      db,
+		stmtMap: make(map[string]*sql.Stmt),
 	}, nil
 }
 
 func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
 	stmtData := []_helper.StmtData{
 		{
+			Name:  "QueryDropTableBanks",
 			Query: QueryDropTableBanks,
 		},
 		{
+			Name:  "QueryDropTableArguments",
 			Query: QueryDropTableArguments,
 		},
 		{
+			Name:  "QueryDropTableBaseData",
 			Query: QueryDropTableBaseData,
 		},
 	}
 
-	return _helper.ExecTxQueries(ctx, d.db, tx, stmtData)
+	return _helper.ExecTxQueries(ctx, d.db, tx, d.stmtMap, stmtData)
 }
 
 func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, startDate time.Time, toDate time.Time, limitTrxData int64, matchPercentage int) (err error) {
@@ -52,8 +57,10 @@ func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, st
 		ctx,
 		d.db,
 		tx,
+		d.stmtMap,
 		[]_helper.StmtData{
 			{
+				Name:  "QueryCreateTableArguments",
 				Query: QueryCreateTableArguments,
 				Args: func() []any {
 					dateStringFormat := "2006-01-02"
@@ -66,6 +73,7 @@ func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, st
 				}(),
 			},
 			{
+				Name:  "QueryCreateTableBanks",
 				Query: QueryCreateTableBanks,
 				Args: func() []any {
 					b := new(strings.Builder)
@@ -77,9 +85,11 @@ func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, st
 				}(),
 			},
 			{
+				Name:  "QueryCreateTableBaseData",
 				Query: QueryCreateTableBaseData,
 			},
 			{
+				Name:  "QueryCreateIndexTableBaseData",
 				Query: QueryCreateIndexTableBaseData,
 			},
 		},
@@ -89,7 +99,7 @@ func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, st
 func (d *DB) postWith(ctx context.Context, methodName string, extraExec hunch.ExecutableInSequence) (err error) {
 	var tx *sql.Tx
 	defer func() {
-		err = _helper.CommitOrRollback(ctx, tx, err)
+		err = _helper.CommitOrRollback(tx, err)
 		log.Err(
 			ctx,
 			fmt.Sprintf("[sample.NewDB] Exec %s method in db", methodName),
@@ -139,6 +149,10 @@ func (d *DB) GetTrx(ctx context.Context) (returnData []TrxData, err error) {
 			return d.db.PrepareContext(c, QueryGetTrxData)
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
+			defer func() {
+				_ = i.(*sql.Stmt).Close()
+			}()
+
 			return i.(*sql.Stmt).QueryContext(
 				c,
 			)

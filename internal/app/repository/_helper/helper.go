@@ -8,26 +8,29 @@ import (
 )
 
 type StmtData struct {
+	Name  string
 	Query string
 	Args  []any
 }
 
-func ExecTxQueries(ctx context.Context, db *sql.DB, tx *sql.Tx, stmtData []StmtData) (err error) {
+func ExecTxQueries(ctx context.Context, db *sql.DB, tx *sql.Tx, stmtMap map[string]*sql.Stmt, stmtData []StmtData) (err error) {
 	var executableInSequence []hunch.ExecutableInSequence
 	for k := range stmtData {
 		executableInSequence = append(
 			executableInSequence,
-			func(c context.Context, _ interface{}) (interface{}, error) {
-				i, e := db.PrepareContext(
-					c,
-					stmtData[k].Query,
-				)
+			func(c context.Context, _ interface{}) (r interface{}, e error) {
+				if _, ok := stmtMap[stmtData[k].Name]; !ok {
+					stmtMap[stmtData[k].Name], e = db.PrepareContext(
+						c,
+						stmtData[k].Query,
+					)
 
-				if e != nil {
-					return nil, e
+					if e != nil {
+						return nil, e
+					}
 				}
 
-				return tx.StmtContext(c, i).ExecContext( //nolint:sqlclosecheck
+				return tx.StmtContext(c, stmtMap[stmtData[k].Name]).ExecContext( //nolint:sqlclosecheck
 					c,
 					stmtData[k].Args...,
 				)
@@ -43,7 +46,7 @@ func ExecTxQueries(ctx context.Context, db *sql.DB, tx *sql.Tx, stmtData []StmtD
 	return
 }
 
-func CommitOrRollback(ctx context.Context, tx *sql.Tx, er error) (err error) {
+func CommitOrRollback(tx *sql.Tx, er error) (err error) {
 	if er != nil {
 		err = errors.Wrap(tx.Rollback(), er.Error())
 	} else {

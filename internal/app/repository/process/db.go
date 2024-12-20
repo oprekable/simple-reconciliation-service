@@ -18,7 +18,8 @@ import (
 )
 
 type DB struct {
-	db *sql.DB
+	db      *sql.DB
+	stmtMap map[string]*sql.Stmt
 }
 
 var _ Repository = (*DB)(nil)
@@ -27,14 +28,15 @@ func NewDB(
 	db *sql.DB,
 ) (*DB, error) {
 	return &DB{
-		db: db,
+		db:      db,
+		stmtMap: make(map[string]*sql.Stmt),
 	}, nil
 }
 
 func (d *DB) dropTableWith(ctx context.Context, methodName string, extraExec hunch.ExecutableInSequence) (err error) {
 	var tx *sql.Tx
 	defer func() {
-		err = _helper.CommitOrRollback(ctx, tx, err)
+		err = _helper.CommitOrRollback(tx, err)
 		log.Err(
 			ctx,
 			fmt.Sprintf("[process.NewDB] Exec %s method in db", methodName),
@@ -51,23 +53,28 @@ func (d *DB) dropTableWith(ctx context.Context, methodName string, extraExec hun
 		func(c context.Context, _ interface{}) (interface{}, error) {
 			stmtData := []_helper.StmtData{
 				{
+					Name:  "QueryDropTableArguments",
 					Query: QueryDropTableArguments,
 				},
 				{
+					Name:  "QueryDropTableBanks",
 					Query: QueryDropTableBanks,
 				},
 				{
+					Name:  "QueryDropTableSystemTrx",
 					Query: QueryDropTableSystemTrx,
 				},
 				{
+					Name:  "QueryDropTableBankTrx",
 					Query: QueryDropTableBankTrx,
 				},
 				{
+					Name:  "QueryDropTableReconciliationMap",
 					Query: QueryDropTableReconciliationMap,
 				},
 			}
 
-			return tx, _helper.ExecTxQueries(ctx, d.db, tx, stmtData)
+			return tx, _helper.ExecTxQueries(ctx, d.db, tx, d.stmtMap, stmtData)
 		},
 		extraExec,
 	)
@@ -80,8 +87,10 @@ func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, st
 		ctx,
 		d.db,
 		tx,
+		d.stmtMap,
 		[]_helper.StmtData{
 			{
+				Name:  "QueryCreateTableArguments",
 				Query: QueryCreateTableArguments,
 				Args: func() []any {
 					dateStringFormat := "2006-01-02"
@@ -92,6 +101,7 @@ func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, st
 				}(),
 			},
 			{
+				Name:  "QueryCreateTableBanks",
 				Query: QueryCreateTableBanks,
 				Args: func() []any {
 					b := new(strings.Builder)
@@ -103,12 +113,15 @@ func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, st
 				}(),
 			},
 			{
+				Name:  "QueryCreateTableSystemTrx",
 				Query: QueryCreateTableSystemTrx,
 			},
 			{
+				Name:  "QueryCreateTableBankTrx",
 				Query: QueryCreateTableBankTrx,
 			},
 			{
+				Name:  "QueryCreateTableReconciliationMap",
 				Query: QueryCreateTableReconciliationMap,
 			},
 		},
@@ -130,7 +143,7 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 func (d *DB) importInterface(ctx context.Context, methodName string, query string, data interface{}) (err error) {
 	var tx *sql.Tx
 	defer func() {
-		err = _helper.CommitOrRollback(ctx, tx, err)
+		err = _helper.CommitOrRollback(tx, err)
 		log.Err(
 			ctx,
 			fmt.Sprintf("[process.NewDB] %s method to db (%d data)", methodName, reflect.ValueOf(data).Len()),
@@ -150,6 +163,7 @@ func (d *DB) importInterface(ctx context.Context, methodName string, query strin
 		func(c context.Context, i interface{}) (interface{}, error) {
 			stmtData := []_helper.StmtData{
 				{
+					Name:  methodName,
 					Query: query,
 					Args: func() []any {
 						return []any{
@@ -159,7 +173,7 @@ func (d *DB) importInterface(ctx context.Context, methodName string, query strin
 				},
 			}
 
-			return nil, _helper.ExecTxQueries(ctx, d.db, tx, stmtData)
+			return nil, _helper.ExecTxQueries(ctx, d.db, tx, d.stmtMap, stmtData)
 		},
 	)
 
@@ -177,7 +191,7 @@ func (d *DB) ImportBankTrx(ctx context.Context, data []*banks.BankTrxData) (err 
 func (d *DB) GenerateReconciliationMap(ctx context.Context, minAmount float64, maxAmount float64) (err error) {
 	var tx *sql.Tx
 	defer func() {
-		err = _helper.CommitOrRollback(ctx, tx, err)
+		err = _helper.CommitOrRollback(tx, err)
 		log.Err(
 			ctx,
 			fmt.Sprintf("[process.NewDB] Exec GenerateReconciliationMap method to db (Amount %f - %f)", minAmount, maxAmount),
@@ -194,6 +208,7 @@ func (d *DB) GenerateReconciliationMap(ctx context.Context, minAmount float64, m
 		func(c context.Context, i interface{}) (interface{}, error) {
 			stmtData := []_helper.StmtData{
 				{
+					Name:  "QueryInsertTableReconciliationMap",
 					Query: QueryInsertTableReconciliationMap,
 					Args: func() []any {
 						return []any{
@@ -204,7 +219,7 @@ func (d *DB) GenerateReconciliationMap(ctx context.Context, minAmount float64, m
 				},
 			}
 
-			return nil, _helper.ExecTxQueries(ctx, d.db, tx, stmtData)
+			return nil, _helper.ExecTxQueries(ctx, d.db, tx, d.stmtMap, stmtData)
 		},
 	)
 
@@ -226,6 +241,10 @@ func (d *DB) GetReconciliationSummary(ctx context.Context) (returnData Reconcili
 			return d.db.PrepareContext(c, QueryGetReconciliationSummary)
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
+			defer func() {
+				_ = i.(*sql.Stmt).Close()
+			}()
+
 			return i.(*sql.Stmt).QueryContext( //nolint:sqlclosecheck
 				c,
 			)
