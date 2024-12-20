@@ -31,28 +31,6 @@ func NewDB(
 	}, nil
 }
 
-func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
-	stmtData := []_helper.StmtData{
-		{
-			Query: QueryDropTableArguments,
-		},
-		{
-			Query: QueryDropTableBanks,
-		},
-		{
-			Query: QueryDropTableSystemTrx,
-		},
-		{
-			Query: QueryDropTableBankTrx,
-		},
-		{
-			Query: QueryDropTableReconciliationMap,
-		},
-	}
-
-	return _helper.ExecTxQueries(ctx, d.db, tx, stmtData)
-}
-
 func (d *DB) dropTableWith(ctx context.Context, methodName string, extraExec hunch.ExecutableInSequence) (err error) {
 	var tx *sql.Tx
 	defer func() {
@@ -74,7 +52,25 @@ func (d *DB) dropTableWith(ctx context.Context, methodName string, extraExec hun
 			return nil, e
 		},
 		func(c context.Context, _ interface{}) (interface{}, error) {
-			return tx, d.dropTables(c, tx)
+			stmtData := []_helper.StmtData{
+				{
+					Query: QueryDropTableArguments,
+				},
+				{
+					Query: QueryDropTableBanks,
+				},
+				{
+					Query: QueryDropTableSystemTrx,
+				},
+				{
+					Query: QueryDropTableBankTrx,
+				},
+				{
+					Query: QueryDropTableReconciliationMap,
+				},
+			}
+
+			return tx, _helper.ExecTxQueries(ctx, d.db, tx, stmtData)
 		},
 		extraExec,
 	)
