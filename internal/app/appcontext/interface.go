@@ -11,6 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+//go:generate mockery --name "IAppContext" --output "./_mock" --outpkg "_mock"
 type IAppContext interface {
 	AddToEg(in func())
 	GetEmbedFS() *embed.FS

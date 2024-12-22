@@ -61,7 +61,7 @@ data AS (
         , randomData
     FROM generate_series
 	ORDER BY random()
-	LIMIT (SELECT limit_trx_data * 2 FROM arguments)
+	LIMIT (SELECT limit_trx_data FROM arguments)
 )
 SELECT
     trxID
@@ -137,7 +137,7 @@ SELECT
 FROM with_bank_trx_flagged wbtf
 INNER JOIN base_data bd ON bd.trxID = wbtf.trxID
 ORDER BY wbtf.row_number
-LIMIT (SELECT limit_trx_data * 2 FROM arguments)
+LIMIT (SELECT limit_trx_data FROM arguments)
 ;
 `
 )

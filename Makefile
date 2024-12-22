@@ -13,7 +13,8 @@ download:
 
 .PHONY: install-tools
 install-tools: download
-	@cat tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %@latest
+	@go install $(go list -e -f '{{join .Imports " "}}' tools.go)
+	@#cat tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %@latest
 
 .PHONY: generate
 generate:
@@ -34,7 +35,7 @@ govulncheck:
 	@govulncheck ./...
 
 .PHONY: go-lint-fix-struct-staticcheck-govulncheck
-go-lint-fix-struct-staticcheck-govulncheck: generate
+go-lint-fix-struct-staticcheck-govulncheck: install-tools generate
 	@go mod tidy
 	@golangci-lint run ./... --fix
 	@staticcheck ./...
@@ -52,9 +53,9 @@ run:
 	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) ./simple-reconciliation-service
 	@#env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go
 
-base_args="--showlog=true --listbank=bca,bni,mandiri,bri,danamon --from=$$(date -j -v -10d '+%Y-%m-%d') --to=$$(date -j '+%Y-%m-%d')"
+base_args="--showlog=true --listbank=bca,bni,mandiri,bri,danamon --from=$$(date -j -v -30d '+%Y-%m-%d') --to=$$(date -j '+%Y-%m-%d')"
 process_args="process ${base_args} -g=false"
-sample_args="sample ${base_args} --percentagematch=100 --amountdata=100 -g=true"
+sample_args="sample ${base_args} --percentagematch=100 --amountdata=1000 -g=true"
 
 .PHONY: echo-sample-args
 echo-sample-args:

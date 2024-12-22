@@ -70,7 +70,7 @@ func (s *Svc) parse(data sample.TrxData) (systemTrxData systems.SystemTrxDataInt
 		}
 	}
 
-	if data.IsBankTrx || (!data.IsBankTrx && !data.IsSystemTrx) {
+	if data.IsBankTrx {
 		bank := strings.ToLower(data.Bank)
 		multiplier := float64(1)
 		if data.Type == DEBIT {

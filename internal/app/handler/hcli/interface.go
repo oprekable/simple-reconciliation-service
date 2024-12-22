@@ -6,6 +6,7 @@ import (
 	"simple-reconciliation-service/internal/app/service"
 )
 
+//go:generate mockery --name "Handler" --output "./_mock" --outpkg "_mock"
 type Handler interface {
 	SetComponents(c *component.Components)
 	SetServices(s *service.Services)
