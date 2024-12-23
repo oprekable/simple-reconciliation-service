@@ -3,7 +3,6 @@ package sample
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"simple-reconciliation-service/internal/app/err/core"
 	"simple-reconciliation-service/internal/app/repository/_helper"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/aaronjan/hunch"
 	"github.com/blockloop/scan/v2"
+	"github.com/goccy/go-json"
 	"github.com/pkg/errors"
 )
 
