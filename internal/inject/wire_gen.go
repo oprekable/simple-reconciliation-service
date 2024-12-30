@@ -29,27 +29,29 @@ import (
 
 // Injectors from inject.go:
 
-func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz cconfig.TimeZone, errType []core.ErrorType, isShowLog clogger.IsShowLog, dBPath csqlite.DBPath) (*appcontext.AppContext, error) {
+func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz cconfig.TimeZone, errType []core.ErrorType, isShowLog clogger.IsShowLog, dBPath csqlite.DBPath) (*appcontext.AppContext, func(), error) {
 	configPaths := _wireConfigPathsValue
 	config, err := cconfig.NewConfig(ctx, embedFS, configPaths, appName, tz)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	logger := clogger.ProviderLogger(ctx, isShowLog)
 	erType := cerror.ProvideErType(errType)
 	cerrorError := cerror.NewError(erType)
-	dbSqlite, err := csqlite.ProviderDBSqlite(config, logger, dBPath)
+	dbSqlite, cleanup, err := csqlite.ProviderDBSqlite(config, logger, dBPath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	components := component.NewComponents(config, logger, cerrorError, dbSqlite)
 	db, err := sample.ProviderDB(components)
 	if err != nil {
-		return nil, err
+		cleanup()
+		return nil, nil, err
 	}
 	processDB, err := process.ProviderDB(components)
 	if err != nil {
-		return nil, err
+		cleanup()
+		return nil, nil, err
 	}
 	repositories := repository.NewRepositories(db, processDB)
 	svc := sample2.ProviderSvc(components, repositories)
@@ -58,11 +60,15 @@ func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz
 	v := hcli.ProviderHandlers()
 	cliCli, err := cli.NewCli(components, services, repositories, v)
 	if err != nil {
-		return nil, err
+		cleanup()
+		return nil, nil, err
 	}
 	serverServer := server.NewServer(cliCli)
-	appContext := appcontext.NewAppContext(ctx, embedFS, repositories, services, components, serverServer)
-	return appContext, nil
+	appContext, cleanup2 := appcontext.NewAppContext(ctx, embedFS, repositories, services, components, serverServer)
+	return appContext, func() {
+		cleanup2()
+		cleanup()
+	}, nil
 }
 
 var (

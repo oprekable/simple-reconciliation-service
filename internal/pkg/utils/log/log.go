@@ -2,7 +2,6 @@ package log
 
 import (
 	"context"
-	"fmt"
 	"runtime"
 	"strconv"
 	"time"
@@ -29,26 +28,6 @@ func (u UptimeHook) Run(e *zerolog.Event, _ zerolog.Level, _ string) {
 	}
 
 	e.Str("uptime", uptime)
-}
-
-type Zero struct {
-	LogCtx context.Context
-	LogZ   zerolog.Logger
-}
-
-func (l *Zero) Printf(ctx context.Context, format string, v ...interface{}) {
-	startTime := ctx.Value(StartTime)
-	uptime := ""
-
-	if startTime != nil {
-		uptime = time.Since(startTime.(time.Time)).String()
-	}
-
-	ctx = l.LogZ.WithContext(l.LogCtx)
-	zerolog.Ctx(ctx).
-		Info().
-		Str("uptime", uptime).
-		Msg(fmt.Sprintf(format, v...))
 }
 
 type Caller struct {

@@ -28,7 +28,7 @@ func WireApp(
 	errType []core.ErrorType,
 	isShowLog clogger.IsShowLog,
 	dBPath csqlite.DBPath,
-) (*appcontext.AppContext, error) {
+) (*appcontext.AppContext, func(), error) {
 	wire.Build(
 		component.Set,
 		repository.Set,
@@ -37,5 +37,5 @@ func WireApp(
 		appcontext.NewAppContext,
 	)
 
-	return nil, nil
+	return new(appcontext.AppContext), nil, nil
 }

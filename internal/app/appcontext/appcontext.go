@@ -3,7 +3,6 @@ package appcontext
 import (
 	"context"
 	"embed"
-	"errors"
 	"fmt"
 	"os"
 	"simple-reconciliation-service/internal/app/component"
@@ -38,7 +37,7 @@ func NewAppContext(
 	services *service.Services,
 	components *component.Components,
 	servers *server.Server,
-) *AppContext {
+) (*AppContext, func()) {
 	ctx, cancel := context.WithCancel(ctx)
 	eg, ctx := errgroup.WithContext(ctx)
 
@@ -51,24 +50,7 @@ func NewAppContext(
 		services:     services,
 		components:   components,
 		servers:      servers,
-	}
-}
-
-func (a *AppContext) AddToEg(in func()) {
-	a.eg.Go(func() error {
-		select {
-		case <-a.ctx.Done():
-			log.Err(a.ctx, "error group process killed", errors.New("error group process killed"))
-		default:
-			in()
-		}
-
-		return nil
-	})
-}
-
-func (a *AppContext) GetEmbedFS() *embed.FS {
-	return a.embedFS
+	}, cancel
 }
 
 func (a *AppContext) GetCtx() context.Context {
@@ -79,28 +61,8 @@ func (a *AppContext) GetCtx() context.Context {
 	return a.ctx
 }
 
-func (a *AppContext) GetCtxCancel() context.CancelFunc {
-	return a.ctxCancel
-}
-
-func (a *AppContext) GetEg() *errgroup.Group {
-	return a.eg
-}
-
-func (a *AppContext) GetRepositories() *repository.Repositories {
-	return a.repositories
-}
-
-func (a *AppContext) GetServices() *service.Services {
-	return a.services
-}
-
 func (a *AppContext) GetComponents() *component.Components {
 	return a.components
-}
-
-func (a *AppContext) GetServers() *server.Server {
-	return a.servers
 }
 
 func (a *AppContext) Start() {

@@ -19,7 +19,7 @@ func RunnerSubCommand(cmd *cobra.Command, _ []string, dBPath csqlite.DBPath) (er
 		atexit.AtExit()
 	}()
 
-	app, er := inject.WireApp(
+	app, cleanup, er := inject.WireApp(
 		cmd.Context(),
 		root.EmbedFS,
 		cconfig.AppName(variable.AppName),
@@ -28,6 +28,8 @@ func RunnerSubCommand(cmd *cobra.Command, _ []string, dBPath csqlite.DBPath) (er
 		clogger.IsShowLog(root.FlagIsVerboseValue),
 		dBPath,
 	)
+
+	atexit.Add(cleanup)
 
 	if er != nil {
 		return er

@@ -14,52 +14,6 @@ type ReconcileSystemData struct {
 	mock.Mock
 }
 
-// GetParser provides a mock function with no fields
-func (_m *ReconcileSystemData) GetParser() systems.SystemParserType {
-	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetParser")
-	}
-
-	var r0 systems.SystemParserType
-	if rf, ok := ret.Get(0).(func() systems.SystemParserType); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(systems.SystemParserType)
-	}
-
-	return r0
-}
-
-// ToSql provides a mock function with given fields: ctx, filePath, sqlPattern
-func (_m *ReconcileSystemData) ToSql(ctx context.Context, filePath string, sqlPattern string) (string, error) {
-	ret := _m.Called(ctx, filePath, sqlPattern)
-
-	if len(ret) == 0 {
-		panic("no return value specified for ToSql")
-	}
-
-	var r0 string
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) (string, error)); ok {
-		return rf(ctx, filePath, sqlPattern)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) string); ok {
-		r0 = rf(ctx, filePath, sqlPattern)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, filePath, sqlPattern)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // ToSystemTrxData provides a mock function with given fields: ctx, filePath
 func (_m *ReconcileSystemData) ToSystemTrxData(ctx context.Context, filePath string) ([]*systems.SystemTrxData, error) {
 	ret := _m.Called(ctx, filePath)

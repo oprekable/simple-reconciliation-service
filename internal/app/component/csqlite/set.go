@@ -12,7 +12,7 @@ type DBPath struct {
 	WriteDBPath string
 }
 
-func ProviderDBSqlite(config *cconfig.Config, logger *clogger.Logger, bBPath DBPath) (*DBSqlite, error) {
+func ProviderDBSqlite(config *cconfig.Config, logger *clogger.Logger, bBPath DBPath) (*DBSqlite, func(), error) {
 	return NewDBSqlite(
 		config,
 		logger,

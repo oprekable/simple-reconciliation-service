@@ -1,17 +1,14 @@
 package default_system
 
 import (
-	"bytes"
 	"context"
 	"encoding/csv"
-	"fmt"
 	"io"
 	"math"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/systems"
 	"simple-reconciliation-service/internal/pkg/utils/log"
 
 	"github.com/jszwec/csvutil"
-	"github.com/samber/lo"
 )
 
 type CSVSystemTrxData struct {
@@ -65,10 +62,6 @@ func NewSystemParser(
 	}, nil
 }
 
-func (d *SystemParser) GetParser() systems.SystemParserType {
-	return d.parser
-}
-
 func (d *SystemParser) ToSystemTrxData(ctx context.Context, filePath string) (returnData []*systems.SystemTrxData, err error) {
 	var dec *csvutil.Decoder
 	if d.isHaveHeader {
@@ -105,31 +98,5 @@ func (d *SystemParser) ToSystemTrxData(ctx context.Context, filePath string) (re
 		returnData = append(returnData, systemTrxData)
 	}
 
-	return
-}
-
-func (d *SystemParser) ToSql(ctx context.Context, filePath string, sqlPattern string) (returnData string, err error) {
-	data, err := d.ToSystemTrxData(ctx, filePath)
-	if err != nil {
-		log.AddErr(ctx, err)
-		return returnData, err
-	}
-
-	var buffer bytes.Buffer
-
-	lo.ForEach(data, func(d *systems.SystemTrxData, _ int) {
-		buffer.WriteString(
-			fmt.Sprintf(
-				sqlPattern,
-				d.TrxID,
-				d.TransactionTime,
-				d.Type,
-				d.Amount,
-				d.FilePath,
-			),
-		)
-	})
-
-	returnData = buffer.String()
 	return
 }

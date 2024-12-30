@@ -18,7 +18,7 @@ type DBSqlite struct {
 	dBReadConnOnce  sync.Once
 }
 
-func NewDBSqlite(config *cconfig.Config, logger *clogger.Logger, readDBPath string, writeDBPath string) (rd *DBSqlite, err error) {
+func NewDBSqlite(config *cconfig.Config, logger *clogger.Logger, readDBPath string, writeDBPath string) (rd *DBSqlite, cleanFunc func(), err error) {
 	rd = &DBSqlite{}
 	ctx := logger.GetLogger().With().Str("component", "NewDBSqlite").Ctx(context.Background()).Logger().WithContext(logger.GetCtx())
 
@@ -68,6 +68,11 @@ func NewDBSqlite(config *cconfig.Config, logger *clogger.Logger, readDBPath stri
 		})
 	}
 
+	cleanFunc = func() {
+		_ = rd.DBRead.Close()
+		_ = rd.DBWrite.Close()
+	}
+
 	log.Msg(ctx, "sqlite connection loaded")
-	return rd, err
+	return rd, cleanFunc, err
 }
