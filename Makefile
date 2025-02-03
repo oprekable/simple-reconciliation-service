@@ -13,8 +13,8 @@ download:
 
 .PHONY: install-tools
 install-tools: download
-	@go install $(go list -e -f '{{join .Imports " "}}' tools.go)
-	@#cat tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %@latest
+	@#go install $(go list -e -f '{{join .Imports " "}}' tools.go)
+	@cat tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %@latest
 
 .PHONY: generate
 generate:
@@ -58,7 +58,7 @@ run:
 	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) ./simple-reconciliation-service
 	@#env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go
 
-base_args="--showlog=true --listbank=bca,bni,mandiri,bri,danamon --from=$$(date -j -v -130d '+%Y-%m-%d') --to=$$(date -j '+%Y-%m-%d')"
+base_args="--showlog=true --listbank=bca,bni,mandiri,bri,danamon --from=$$(date -j -v -20d '+%Y-%m-%d') --to=$$(date -j '+%Y-%m-%d')"
 process_args="process ${base_args} -g=false"
 sample_args="sample ${base_args} --percentagematch=100 --amountdata=10000 -g=false"
 

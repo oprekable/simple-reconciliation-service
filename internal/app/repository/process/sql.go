@@ -140,12 +140,12 @@ WHERE r_system = r_bank;
 	QueryGetReconciliationSummary = `
 -- QueryGetReconciliationSummary
 SELECT
-    main_data.total_system_trx
-    , main_data.total_matched_trx
-    , (main_data.total_system_trx - main_data.total_matched_trx) AS total_not_matched_trx
-    , main_data.sum_system_trx
-    , main_data.sum_matched_trx
-    , (main_data.sum_system_trx - main_data.sum_matched_trx) AS sum_discrepancies_trx
+    COALESCE(main_data.total_system_trx, 0) AS total_system_trx
+    , COALESCE(main_data.total_matched_trx, 0) AS total_matched_trx
+    , COALESCE((main_data.total_system_trx - main_data.total_matched_trx), 0) AS total_not_matched_trx
+    , COALESCE(main_data.sum_system_trx, 0) AS sum_system_trx
+    , COALESCE(main_data.sum_matched_trx, 0) AS sum_matched_trx
+    , COALESCE((main_data.sum_system_trx - main_data.sum_matched_trx), 0) AS sum_discrepancies_trx
 FROM (
     SELECT
         COUNT(*) AS total_system_trx
