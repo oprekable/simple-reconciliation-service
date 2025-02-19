@@ -61,7 +61,7 @@ data AS (
         , randomData
     FROM generate_series
 	ORDER BY random()
-	LIMIT (SELECT limit_trx_data FROM arguments)
+	LIMIT (SELECT limit_trx_data * 2 FROM arguments)
 )
 SELECT
     trxID
@@ -124,20 +124,44 @@ WITH with_system_trx AS (
         END AS is_bank_trx
     FROM with_system_trx wst, arguments a
 )
+, final AS (
+	SELECT
+		wbtf.trxID
+		, lower(bd.bank) || '-' || lower(hex(randomblob(16))) AS uniqueIdentifier
+		, wbtf.is_system_trx
+		, wbtf.is_bank_trx
+		, bd.type
+		, bd.bank
+		, bd.amount
+		, bd.transactionTime
+		, DATE(bd.transactionTime)  AS date
+		, wbtf.row_number
+		, COUNT(CASE WHEN wbtf.is_bank_trx THEN 1 END) OVER () AS max_row_number_is_bank_trx
+		, COUNT(CASE WHEN wbtf.is_system_trx THEN 1 END) OVER () AS max_row_number_is_system_trx
+		, a.limit_trx_data
+	FROM with_bank_trx_flagged wbtf
+	INNER JOIN base_data bd ON bd.trxID = wbtf.trxID
+	LEFT JOIN arguments a ON TRUE
+)
 SELECT
-    wbtf.trxID
-    , lower(bd.bank) || '-' || lower(hex(randomblob(16))) AS uniqueIdentifier
-    , wbtf.is_system_trx
-    , wbtf.is_bank_trx
-    , bd.type
-    , bd.bank
-    , bd.amount
-    , bd.transactionTime
-    , DATE(bd.transactionTime)  AS date
-FROM with_bank_trx_flagged wbtf
-INNER JOIN base_data bd ON bd.trxID = wbtf.trxID
-ORDER BY wbtf.row_number
-LIMIT (SELECT limit_trx_data FROM arguments)
+    final.trxID
+    , final.uniqueIdentifier
+    , final.is_system_trx
+    , final.is_bank_trx
+    , final.type
+    , final.bank
+    , final.amount
+    , final.transactionTime
+    , final.date
+FROM final
+WHERE final.row_number <= (
+    CASE
+       WHEN ((final.max_row_number_is_system_trx * 2) - final.max_row_number_is_bank_trx) < (final.limit_trx_data * 2)
+           THEN ((final.max_row_number_is_system_trx * 2) - final.max_row_number_is_bank_trx)
+       ELSE final.limit_trx_data
+    END
+)
+ORDER BY final.row_number
 ;
 `
 )

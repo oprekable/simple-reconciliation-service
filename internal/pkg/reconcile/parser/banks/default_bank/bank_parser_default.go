@@ -6,6 +6,7 @@ import (
 	"math"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks/_helper"
+	"time"
 )
 
 type CSVBankTrxData struct {
@@ -43,15 +44,20 @@ func (u *CSVBankTrxData) GetBank() string {
 	return u.DefaultBank
 }
 
-func (u *CSVBankTrxData) ToBankTrxData() *banks.BankTrxData {
+func (u *CSVBankTrxData) ToBankTrxData() (returnData *banks.BankTrxData, err error) {
+	t, e := time.Parse("2006-01-02", u.DefaultDate)
+	if e != nil {
+		return nil, e
+	}
+
 	return &banks.BankTrxData{
 		UniqueIdentifier: u.DefaultUniqueIdentifier,
-		Date:             u.DefaultDate,
+		Date:             t,
 		Type:             u.GetType(),
 		Bank:             u.DefaultBank,
 		FilePath:         "",
 		Amount:           u.GetAbsAmount(),
-	}
+	}, nil
 }
 
 type BankParser struct {

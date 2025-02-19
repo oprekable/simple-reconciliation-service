@@ -1,5 +1,7 @@
 package banks
 
+import "time"
+
 type BankParserType string
 
 const (
@@ -17,7 +19,7 @@ const (
 
 type BankTrxData struct {
 	UniqueIdentifier string
-	Date             string
+	Date             time.Time
 	Type             TrxType
 	Bank             string
 	FilePath         string

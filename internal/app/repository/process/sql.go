@@ -131,7 +131,7 @@ FROM (
          FROM main_data md
         INNER JOIN system_trx st ON st.Amount >= md.MinAmount AND st.Amount < md.MaxAmount
         INNER JOIN bank_trx bt ON
-            bt.Date = DATE(st.TransactionTime)
+            bt.Date = STRFTIME('%FT%TZ', DATE(st.TransactionTime))
             AND bt.Type = st.Type
             AND bt.Amount = st.Amount
      )

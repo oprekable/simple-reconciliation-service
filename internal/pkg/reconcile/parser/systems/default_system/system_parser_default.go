@@ -7,6 +7,7 @@ import (
 	"math"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/systems"
 	"simple-reconciliation-service/internal/pkg/utils/log"
+	"time"
 
 	"github.com/jszwec/csvutil"
 )
@@ -33,14 +34,19 @@ func (u *CSVSystemTrxData) GetAmount() float64 {
 func (u *CSVSystemTrxData) GetType() systems.TrxType {
 	return systems.TrxType(u.Type)
 }
-func (u *CSVSystemTrxData) ToSystemTrxData() *systems.SystemTrxData {
+func (u *CSVSystemTrxData) ToSystemTrxData() (returnData *systems.SystemTrxData, err error) {
+	t, e := time.Parse("2006-01-02 15:04:05", u.TransactionTime)
+	if e != nil {
+		return nil, e
+	}
+
 	return &systems.SystemTrxData{
 		TrxID:           u.TrxID,
-		TransactionTime: u.TransactionTime,
+		TransactionTime: t,
 		Type:            systems.TrxType(u.Type),
 		FilePath:        "",
 		Amount:          u.Amount,
-	}
+	}, nil
 }
 
 type SystemParser struct {
@@ -93,7 +99,12 @@ func (d *SystemParser) ToSystemTrxData(ctx context.Context, filePath string) (re
 			return nil, err
 		}
 
-		systemTrxData := originalData.ToSystemTrxData()
+		systemTrxData, er := originalData.ToSystemTrxData()
+		if er != nil {
+			log.AddErr(ctx, er)
+			continue
+		}
+
 		systemTrxData.FilePath = filePath
 		returnData = append(returnData, systemTrxData)
 	}

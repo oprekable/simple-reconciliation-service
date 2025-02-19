@@ -13,5 +13,5 @@ type SystemTrxDataInterface interface {
 	GetTransactionTime() string
 	GetAmount() float64
 	GetType() TrxType
-	ToSystemTrxData() *SystemTrxData
+	ToSystemTrxData() (returnData *SystemTrxData, err error)
 }

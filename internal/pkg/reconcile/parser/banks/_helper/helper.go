@@ -39,7 +39,12 @@ func ToBankTrxData(ctx context.Context, filePath string, isHaveHeader bool, bank
 			return nil, err
 		}
 
-		bankTrxData := originalData.ToBankTrxData()
+		bankTrxData, er := originalData.ToBankTrxData()
+		if er != nil {
+			log.AddErr(ctx, er)
+			continue
+		}
+		
 		bankTrxData.Bank = bank
 		bankTrxData.FilePath = filePath
 		bankTrxData.Type = originalData.GetType()

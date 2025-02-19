@@ -1,5 +1,7 @@
 package systems
 
+import "time"
+
 type SystemParserType string
 
 const (
@@ -10,7 +12,7 @@ type TrxType string
 
 type SystemTrxData struct {
 	TrxID           string
-	TransactionTime string
+	TransactionTime time.Time
 	Type            TrxType
 	FilePath        string
 	Amount          float64

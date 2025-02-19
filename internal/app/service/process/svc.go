@@ -309,14 +309,9 @@ func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, 
 		return (t.Equal(minDate) || t.After(minDate)) && t.Before(maxDate)
 	}
 
-	isOKCheck := func(timeToCheck string, timeFormat string) bool {
-		t, e := time.Parse(timeFormat, timeToCheck)
-		if e != nil {
-			return false
-		}
-
+	isOKCheck := func(timeToCheck time.Time) bool {
 		return isOK(
-			t,
+			timeToCheck,
 			s.comp.Config.Data.Reconciliation.FromDate,
 			s.comp.Config.Data.Reconciliation.ToDate.AddDate(0, 0, 1),
 		)
@@ -347,7 +342,7 @@ func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, 
 			}
 
 			trxData.SystemTrx = lo.Filter(data, func(item *systems.SystemTrxData, index int) bool {
-				if !isOKCheck(item.TransactionTime, "2006-01-02 15:04:05") {
+				if !isOKCheck(item.TransactionTime) {
 					return false
 				}
 
@@ -371,7 +366,7 @@ func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, 
 			}
 
 			trxData.BankTrx = lo.Filter(data, func(item *banks.BankTrxData, index int) bool {
-				return isOKCheck(item.Date, "2006-01-02")
+				return isOKCheck(item.Date)
 			})
 
 			return
@@ -393,6 +388,7 @@ func (s *Svc) generateReconciliationSummaryAndFiles(ctx context.Context) (return
 	}
 
 	err = deepcopier.Copy(&summary).To(&returnData)
+	// TODO: generate match & not match files
 	return
 }
 
@@ -457,7 +453,7 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs, bar *pro
 			return
 		},
 		func(c context.Context, i interface{}) (r interface{}, e error) {
-			progressbarhelper.BarDescribe(bar, "[cyan][7/7] Post Process Generate Reconciliation...")
+			progressbarhelper.BarDescribe(bar, "[cyan][7/8] Post Process Generate Reconciliation...")
 			if !s.comp.Config.Data.IsDebug {
 				e = s.repo.RepoProcess.Post(
 					c,

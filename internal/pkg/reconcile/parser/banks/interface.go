@@ -17,5 +17,5 @@ type BankTrxDataInterface interface {
 	GetAbsAmount() float64
 	GetType() TrxType
 	GetBank() string
-	ToBankTrxData() *BankTrxData
+	ToBankTrxData() (returnData *BankTrxData, err error)
 }
