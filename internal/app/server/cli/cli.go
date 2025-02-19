@@ -54,7 +54,7 @@ func (c *Cli) Start(eg *errgroup.Group) {
 		ctx := c.ctx
 
 		for k, v := range c.handlers {
-			if v.Name() == c.comp.Config.Action {
+			if v.Name() == c.comp.Config.Reconciliation.Action {
 				err = c.handlers[k].Exec()
 				if err != nil {
 					log.Err(ctx, "error", err)
