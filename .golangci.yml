@@ -317,3 +317,9 @@ linters-settings:
       - name: waitgroup-by-value
         severity: warning
         disabled: true
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: tools\.go
+      linters:
+        - gofmt

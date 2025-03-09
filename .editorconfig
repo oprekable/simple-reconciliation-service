@@ -15,11 +15,5 @@ indent_style = tab
 [{*.go,*.go2}]
 indent_style = tab
 
-[{*.har,*.jsb2,*.jsb3,*.json,.babelrc,.eslintrc,.stylelintrc,bowerrc,jest.config}]
-indent_size = 2
-
-[{*.http,*.rest}]
-indent_size = 0
-
 [{*.yaml,*.yml,pubspec.lock}]
 indent_size = 2

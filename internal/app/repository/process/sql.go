@@ -78,7 +78,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS reconciliation_map_UniqueIdentifier_index ON r
 `
 	QueryInsertTableSystemTrx = `
 -- QueryInsertTableSystemTrx
-INSERT OR IGNORE INTO system_trx (TrxID, Amount, Type, TransactionTime, FilePath)
+INSERT INTO system_trx (TrxID, Amount, Type, TransactionTime, FilePath)
 	SELECT
 	json_extract(j.value, '$.TrxID') AS TrxID
 	 , json_extract(j.value, '$.Amount') AS Amount
@@ -93,7 +93,7 @@ INSERT OR IGNORE INTO system_trx (TrxID, Amount, Type, TransactionTime, FilePath
 
 	QueryInsertTableBankTrx = `
 -- QueryInsertTableBankTrx
-INSERT OR IGNORE INTO bank_trx (UniqueIdentifier, Date, Type, FilePath, Bank, Amount)
+INSERT INTO bank_trx (UniqueIdentifier, Date, Type, FilePath, Bank, Amount)
 	SELECT
 	json_extract(j.value, '$.UniqueIdentifier') AS UniqueIdentifier
 	 , json_extract(j.value, '$.Date') AS Date
@@ -114,7 +114,7 @@ WITH main_data AS (
         CAST(? AS FLOAT) AS MinAmount
         , CAST(? AS FLOAT) AS MaxAmount
 )
-INSERT OR IGNORE INTO reconciliation_map(
+INSERT INTO reconciliation_map(
     TrxID,
     UniqueIdentifier
 )

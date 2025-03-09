@@ -41,41 +41,64 @@ FROM json_each(
 	QueryCreateTableBaseData = `
 -- QueryCreateTableBaseData
 CREATE TABLE IF NOT EXISTS base_data AS
-WITH RECURSIVE generate_series(value, randomData) AS (
+WITH RECURSIVE generate_series(no, transactionTime, trxID, amount, type, bank_array, bank, count_bank, limit_data) AS (
     SELECT
-        start AS v
-		, RANDOM() AS randomData
-    FROM arguments
+        1,
+        datetime(
+                abs(random()) % (strftime('%s', DATETIME(DATETIME(a.end, '+1 day'), '-1 second')) - strftime('%s', a.start)) + strftime('%s', a.start),
+                'unixepoch'
+        ),
+        lower(hex(randomblob(16))),
+        CAST(
+                FLOOR((ABS(random()) % (100000 - 1000) + 1000) / 100) * 100 AS FLOAT
+        ),
+        CASE
+            WHEN ABS(random()) % 2 = 1 THEN 'DEBIT'
+            ELSE 'CREDIT'
+        END,
+        (SELECT JSON_GROUP_ARRAY(b.bank_name) FROM banks b),
+        JSON_EXTRACT(
+                (SELECT JSON_GROUP_ARRAY(b.bank_name) FROM banks b),
+                '$[' || cast(ABS(RANDOM()) % (SELECT COUNT(*) FROM banks) as text) || ']'
+        ),
+        (SELECT COUNT(*) FROM banks),
+        (CASE
+            WHEN a.match_percentage == 100 THEN a.limit_trx_data
+            ELSE (a.limit_trx_data * 2)
+        END)
+    FROM arguments a
     UNION ALL
     SELECT
-        DATETIME(value , '+1 second') AS v
-		, RANDOM() AS randomData
-    FROM generate_series
-    WHERE
-        DATETIME(value , '+1 second') <= (SELECT DATETIME(DATETIME(end, '+1 day'), '-1 second') FROM arguments)
-),
-data AS (
-    SELECT
-        value AS transactionTime
-        , lower(hex(randomblob(16))) AS trxID
-        , randomData
-    FROM generate_series
-	ORDER BY random()
-	LIMIT (SELECT limit_trx_data * 2 FROM arguments)
+        no+1,
+        datetime(
+                abs(random()) % (strftime('%s', DATETIME(DATETIME(a.end, '+1 day'), '-1 second')) - strftime('%s', a.start)) + strftime('%s', a.start),
+                'unixepoch'
+        ),
+        lower(hex(randomblob(16))),
+        CAST(
+                FLOOR((ABS(random()) % (100000 - 1000) + 1000) / 100) * 100 AS FLOAT
+        ),
+        CASE
+            WHEN ABS(random()) % 2 = 1 THEN 'DEBIT'
+            ELSE 'CREDIT'
+        END,
+        bank_array,
+        JSON_EXTRACT(
+                (bank_array),
+                '$[' || cast(ABS(RANDOM()) % count_bank AS text) || ']'
+        ),
+        count_bank,
+        limit_data
+    FROM generate_series, arguments a
+    WHERE no+1 <= limit_data
 )
 SELECT
-    trxID
-    , transactionTime
-    , CAST(
-        FLOOR((ABS(randomData) % (100000 - 1000) + 1000) / 100) * 100 AS FLOAT
-      ) AS amount
-    , CASE
-          WHEN randomData % 2 = 1 THEN 'DEBIT'
-          ELSE 'CREDIT'
-    END AS type
-    , bank_name AS bank
-FROM data
-LEFT JOIN banks ON id = ABS(randomData % (SELECT COUNT(*) FROM banks))
+    gs.trxID,
+    gs.transactionTime,
+    gs.amount,
+    gs.type,
+    gs.bank
+FROM generate_series gs
 ;
 `
 	QueryCreateIndexTableBaseData = `

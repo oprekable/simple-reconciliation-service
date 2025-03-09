@@ -58,9 +58,9 @@ run:
 	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) ./simple-reconciliation-service
 	@#env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go
 
-base_args="--showlog=true --listbank=bca,bni,mandiri,bri,danamon --from=$$(date -j -v -120d '+%Y-%m-%d') --to=$$(date -j '+%Y-%m-%d')"
-process_args="process ${base_args} -g=true"
-sample_args="sample ${base_args} --percentagematch=100 --amountdata=1000 -g=true"
+base_args="--showlog=true --listbank=bca,bni,mandiri,bri,danamon --from=$$(date -j -v -10d '+%Y-%m-%d') --to=$$(date -j '+%Y-%m-%d')"
+process_args="process ${base_args} -g=false"
+sample_args="sample ${base_args} --percentagematch=100 --amountdata=1000 -g=false"
 
 .PHONY: echo-sample-args
 echo-sample-args:
@@ -70,7 +70,7 @@ echo-sample-args:
 .PHONY: run-sample
 run-sample:
 	@echo $(sample_args)
-	@go build  -gcflags -live .
+	@go build -buildvcs=false -ldflags="-s -w" .
 	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) ./simple-reconciliation-service  $$(echo $(sample_args))
 	@#env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go  $$(echo $(sample_args))
 
@@ -82,7 +82,7 @@ echo-process-args:
 .PHONY: run-process
 run-process:
 	@echo "go run main.go process $(process_args)"
-	@go build  -gcflags -live .
+	@go build -buildvcs=false -ldflags="-s -w" .
 	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) ./simple-reconciliation-service $$(echo $(process_args))
 #	@env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go $$(echo $(process_args))
 
