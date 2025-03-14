@@ -4,13 +4,57 @@ import (
 	"context"
 	"database/sql"
 	"github.com/aaronjan/hunch"
+	"github.com/blockloop/scan/v2"
 	"github.com/pkg/errors"
+	"reflect"
+	"simple-reconciliation-service/internal/app/err/core"
 )
 
 type StmtData struct {
 	Name  string
 	Query string
 	Args  []any
+}
+
+func QueryContext[out any](ctx context.Context, db *sql.DB, stmtMap map[string]*sql.Stmt, stmtData StmtData) (returnData out, err error) {
+	_, err = hunch.Waterfall(
+		ctx,
+		func(c context.Context, _ interface{}) (_ interface{}, e error) {
+			_, ok := stmtMap[stmtData.Name]
+			if !ok {
+				stmtMap[stmtData.Name], e = db.PrepareContext(c, stmtData.Query) //nolint:sqlclosecheck
+			}
+
+			return
+		},
+		func(c context.Context, i interface{}) (interface{}, error) {
+			return stmtMap[stmtData.Name].QueryContext(
+				c,
+				stmtData.Args...,
+			)
+		},
+		func(c context.Context, i interface{}) (interface{}, error) {
+			rows := i.(*sql.Rows)
+			switch reflect.TypeOf(returnData).Kind() {
+			case reflect.Slice:
+				{
+					return nil, scan.RowsStrict(&returnData, rows)
+				}
+			case reflect.Array:
+				{
+					return nil, scan.RowsStrict(&returnData, rows)
+				}
+			default:
+				return nil, scan.RowStrict(&returnData, rows)
+			}
+		},
+	)
+
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		err = core.CErrDBConn.Error()
+	}
+
+	return
 }
 
 func ExecTxQueries(ctx context.Context, db *sql.DB, tx *sql.Tx, stmtMap map[string]*sql.Stmt, stmtData []StmtData) (err error) {

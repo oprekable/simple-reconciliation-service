@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"simple-reconciliation-service/internal/app/err/core"
 	"simple-reconciliation-service/internal/app/repository/_helper"
 	"simple-reconciliation-service/internal/pkg/utils/log"
 	"strconv"
@@ -12,9 +11,7 @@ import (
 	"time"
 
 	"github.com/aaronjan/hunch"
-	"github.com/blockloop/scan/v2"
 	"github.com/goccy/go-json"
-	"github.com/pkg/errors"
 )
 
 type DB struct {
@@ -130,37 +127,20 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 }
 
 func (d *DB) GetTrx(ctx context.Context) (returnData []TrxData, err error) {
-	stmtName := "QueryGetTrxData"
-	stmtQuery := QueryGetTrxData
-
 	defer func() {
 		log.Err(ctx, "[sample.NewDB] Exec GetData method in db", err)
 	}()
 
-	_, err = hunch.Waterfall(
+	returnData, err = _helper.QueryContext[[]TrxData](
 		ctx,
-		func(c context.Context, _ interface{}) (_ interface{}, e error) {
-			_, ok := d.stmtMap[stmtName]
-			if !ok {
-				d.stmtMap[stmtName], e = d.db.PrepareContext(c, stmtQuery) //nolint:sqlclosecheck
-			}
-
-			return
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			return d.stmtMap[stmtName].QueryContext(
-				c,
-			)
-		},
-		func(c context.Context, i interface{}) (interface{}, error) {
-			rows := i.(*sql.Rows)
-			return nil, scan.RowsStrict(&returnData, rows)
+		d.db,
+		d.stmtMap,
+		_helper.StmtData{
+			Name:  "QueryGetTrxData",
+			Query: QueryGetTrxData,
+			Args:  nil,
 		},
 	)
-
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		err = core.CErrDBConn.Error()
-	}
 
 	return
 }
