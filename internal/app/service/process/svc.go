@@ -395,14 +395,24 @@ func (s *Svc) generateReconciliationSummaryAndFiles(ctx context.Context, fs afer
 		return
 	}
 
+	err = s.generateReconciliationFiles(ctx, &returnData, fs, isDeleteDirectory)
+	return
+}
+
+func (s *Svc) generateReconciliationFiles(ctx context.Context, reconciliationSummary *ReconciliationSummary, fs afero.Fs, isDeleteDirectory bool) (err error) {
+	if reconciliationSummary == nil {
+		return
+	}
+
 	fileNameSuffix := strconv.FormatInt(time.Now().Unix(), 10)
+	logTemplate := "[process.NewSvc] save csv file %s executed"
 
 	_, err = hunch.Waterfall(
 		ctx,
 		func(c context.Context, _ interface{}) (_ interface{}, e error) {
 			fileReportSystemTrx := fmt.Sprintf("%s/%s/%s/matched_%s.csv", s.comp.Config.Data.Reconciliation.ReportTRXPath, "system", "matched", fileNameSuffix)
 			defer func() {
-				log.Err(c, "[process.NewSvc] save csv file "+fileReportSystemTrx+" executed", e)
+				log.Err(c, fmt.Sprintf(logTemplate, fileReportSystemTrx), e)
 			}()
 
 			if d, er := s.repo.RepoProcess.GetMatchedTrx(ctx); er != nil || d == nil {
@@ -416,14 +426,14 @@ func (s *Svc) generateReconciliationSummaryAndFiles(ctx context.Context, fs afer
 					isDeleteDirectory,
 				)
 
-				returnData.FileMatchedSystemTrx = fileReportSystemTrx
+				reconciliationSummary.FileMatchedSystemTrx = fileReportSystemTrx
 				return nil, e
 			}
 		},
 		func(c context.Context, _ interface{}) (_ interface{}, e error) {
 			fileReportSystemTrx := fmt.Sprintf("%s/%s/%s/notmatched_%s.csv", s.comp.Config.Data.Reconciliation.ReportTRXPath, "system", "notmatched", fileNameSuffix)
 			defer func() {
-				log.Err(c, "[process.NewSvc] save csv file "+fileReportSystemTrx+" executed", e)
+				log.Err(c, fmt.Sprintf(logTemplate, fileReportSystemTrx), e)
 			}()
 
 			if d, er := s.repo.RepoProcess.GetNotMatchedSystemTrx(ctx); er != nil || d == nil {
@@ -437,7 +447,7 @@ func (s *Svc) generateReconciliationSummaryAndFiles(ctx context.Context, fs afer
 					isDeleteDirectory,
 				)
 
-				returnData.FileMissingSystemTrx = fileReportSystemTrx
+				reconciliationSummary.FileMissingSystemTrx = fileReportSystemTrx
 				return nil, e
 			}
 		},
@@ -451,7 +461,7 @@ func (s *Svc) generateReconciliationSummaryAndFiles(ctx context.Context, fs afer
 					bankTrxData[data.Bank] = append(bankTrxData[data.Bank], data)
 				})
 
-				returnData.FileMissingBankTrx = make(map[string]string)
+				reconciliationSummary.FileMissingBankTrx = make(map[string]string)
 				bankNames := lo.Keys(bankTrxData)
 				if isDeleteDirectory {
 					dirReportBankTrx := fmt.Sprintf("%s/%s/%s", s.comp.Config.Data.Reconciliation.ReportTRXPath, "bank", "notmatched")
@@ -471,8 +481,8 @@ func (s *Svc) generateReconciliationSummaryAndFiles(ctx context.Context, fs afer
 						bankTrxData[item],
 						false,
 					)
-					returnData.FileMissingBankTrx[item] = fileReportBankTrx
-					log.Err(c, "[process.NewSvc] save csv file "+fileReportBankTrx+" executed", e)
+					reconciliationSummary.FileMissingBankTrx[item] = fileReportBankTrx
+					log.Err(c, fmt.Sprintf(logTemplate, fileReportBankTrx), e)
 				})
 
 				return nil, e
