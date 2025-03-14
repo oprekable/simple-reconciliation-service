@@ -5,13 +5,9 @@ import (
 	"github.com/spf13/afero"
 )
 
-type FSType struct {
-	LocalStorageFs afero.Fs
-}
-
-func ProviderCFs(fsType FSType) *Fs {
+func ProviderCFs(fsType afero.Fs) *Fs {
 	return NewFs(
-		fsType.LocalStorageFs,
+		fsType,
 	)
 }
 

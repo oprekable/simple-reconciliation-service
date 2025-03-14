@@ -8,7 +8,6 @@ import (
 	"simple-reconciliation-service/internal/app/appcontext"
 	"simple-reconciliation-service/internal/app/component"
 	"simple-reconciliation-service/internal/app/component/cconfig"
-	"simple-reconciliation-service/internal/app/component/cfs"
 	"simple-reconciliation-service/internal/app/component/clogger"
 	"simple-reconciliation-service/internal/app/component/csqlite"
 	"simple-reconciliation-service/internal/app/err/core"
@@ -29,7 +28,6 @@ func WireApp(
 	errType []core.ErrorType,
 	isShowLog clogger.IsShowLog,
 	dBPath csqlite.DBPath,
-	fsType cfs.FSType,
 ) (*appcontext.AppContext, func(), error) {
 	wire.Build(
 		component.Set,

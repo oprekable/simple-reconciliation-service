@@ -4,7 +4,6 @@ import (
 	"github.com/spf13/cobra"
 	"simple-reconciliation-service/cmd/root"
 	"simple-reconciliation-service/internal/app/component/cconfig"
-	"simple-reconciliation-service/internal/app/component/cfs"
 	"simple-reconciliation-service/internal/app/component/clogger"
 	"simple-reconciliation-service/internal/app/component/csqlite"
 	"simple-reconciliation-service/internal/app/err"
@@ -15,7 +14,7 @@ import (
 	"time"
 )
 
-func RunnerSubCommand(cmd *cobra.Command, _ []string, dBPath csqlite.DBPath, fsType cfs.FSType) (er error) {
+func RunnerSubCommand(cmd *cobra.Command, _ []string, dBPath csqlite.DBPath) (er error) {
 	defer func() {
 		atexit.AtExit()
 	}()
@@ -28,7 +27,6 @@ func RunnerSubCommand(cmd *cobra.Command, _ []string, dBPath csqlite.DBPath, fsT
 		err.RegisteredErrorType,
 		clogger.IsShowLog(root.FlagIsVerboseValue),
 		dBPath,
-		fsType,
 	)
 
 	atexit.Add(cleanup)

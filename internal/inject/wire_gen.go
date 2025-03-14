@@ -9,6 +9,7 @@ package inject
 import (
 	"context"
 	"embed"
+	"github.com/spf13/afero"
 	"simple-reconciliation-service/internal/app/appcontext"
 	"simple-reconciliation-service/internal/app/component"
 	"simple-reconciliation-service/internal/app/component/cconfig"
@@ -30,7 +31,7 @@ import (
 
 // Injectors from inject.go:
 
-func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz cconfig.TimeZone, errType []core.ErrorType, isShowLog clogger.IsShowLog, dBPath csqlite.DBPath, fsType cfs.FSType) (*appcontext.AppContext, func(), error) {
+func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz cconfig.TimeZone, errType []core.ErrorType, isShowLog clogger.IsShowLog, dBPath csqlite.DBPath) (*appcontext.AppContext, func(), error) {
 	configPaths := _wireConfigPathsValue
 	config, err := cconfig.NewConfig(ctx, embedFS, configPaths, appName, tz)
 	if err != nil {
@@ -43,8 +44,9 @@ func WireApp(ctx context.Context, embedFS *embed.FS, appName cconfig.AppName, tz
 	if err != nil {
 		return nil, nil, err
 	}
-	fs := cfs.ProviderCFs(fsType)
-	components := component.NewComponents(config, logger, cerrorError, dbSqlite, fs)
+	fs := _wireFsValue
+	cfsFs := cfs.ProviderCFs(fs)
+	components := component.NewComponents(config, logger, cerrorError, dbSqlite, cfsFs)
 	db, err := sample.ProviderDB(components)
 	if err != nil {
 		cleanup()
@@ -78,4 +80,5 @@ var (
 		"./*.toml",
 		"./params/*.toml",
 	})
+	_wireFsValue = afero.NewOsFs()
 )

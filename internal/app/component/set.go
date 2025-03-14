@@ -7,6 +7,8 @@ import (
 	"simple-reconciliation-service/internal/app/component/clogger"
 	"simple-reconciliation-service/internal/app/component/csqlite"
 
+	"github.com/spf13/afero"
+
 	"github.com/google/wire"
 )
 
@@ -27,6 +29,7 @@ var Set = wire.NewSet(
 			"./params/*.toml",
 		}),
 	),
+	wire.InterfaceValue(new(afero.Fs), afero.NewOsFs()),
 	cconfig.Set,
 	clogger.Set,
 	cerror.Set,
