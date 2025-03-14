@@ -410,83 +410,80 @@ func (s *Svc) generateReconciliationFiles(ctx context.Context, reconciliationSum
 	_, err = hunch.Waterfall(
 		ctx,
 		func(c context.Context, _ interface{}) (_ interface{}, e error) {
-			fileReportSystemTrx := fmt.Sprintf("%s/%s/%s/matched_%s.csv", s.comp.Config.Data.Reconciliation.ReportTRXPath, "system", "matched", fileNameSuffix)
+			reconciliationSummary.FileMatchedSystemTrx = fmt.Sprintf("%s/%s/%s/matched_%s.csv", s.comp.Config.Data.Reconciliation.ReportTRXPath, "system", "matched", fileNameSuffix)
 			defer func() {
-				log.Err(c, fmt.Sprintf(logTemplate, fileReportSystemTrx), e)
+				log.Err(c, fmt.Sprintf(logTemplate, reconciliationSummary.FileMatchedSystemTrx), e)
 			}()
 
-			if d, er := s.repo.RepoProcess.GetMatchedTrx(ctx); er != nil || d == nil {
+			d, er := s.repo.RepoProcess.GetMatchedTrx(ctx)
+			if er != nil || d == nil {
 				return nil, er
-			} else {
+			}
+
+			return nil, csvhelper.StructToCSVFile(
+				c,
+				fs,
+				reconciliationSummary.FileMatchedSystemTrx,
+				d,
+				isDeleteDirectory,
+			)
+		},
+		func(c context.Context, _ interface{}) (_ interface{}, e error) {
+			reconciliationSummary.FileMissingSystemTrx = fmt.Sprintf("%s/%s/%s/notmatched_%s.csv", s.comp.Config.Data.Reconciliation.ReportTRXPath, "system", "notmatched", fileNameSuffix)
+			defer func() {
+				log.Err(c, fmt.Sprintf(logTemplate, reconciliationSummary.FileMissingSystemTrx), e)
+			}()
+
+			d, er := s.repo.RepoProcess.GetNotMatchedSystemTrx(ctx)
+			if er != nil || d == nil {
+				return nil, er
+			}
+
+			return nil, csvhelper.StructToCSVFile(
+				c,
+				fs,
+				reconciliationSummary.FileMissingSystemTrx,
+				d,
+				isDeleteDirectory,
+			)
+		},
+		func(c context.Context, _ interface{}) (_ interface{}, e error) {
+			d, er := s.repo.RepoProcess.GetNotMatchedBankTrx(ctx)
+			if er != nil || d == nil {
+				return nil, er
+			}
+
+			bankTrxData := make(map[string][]process.NotMatchedBankTrx)
+			lo.ForEach(d, func(data process.NotMatchedBankTrx, _ int) {
+				data.Bank = strings.ToLower(data.Bank)
+				bankTrxData[data.Bank] = append(bankTrxData[data.Bank], data)
+			})
+
+			reconciliationSummary.FileMissingBankTrx = make(map[string]string)
+			bankNames := lo.Keys(bankTrxData)
+			if isDeleteDirectory {
+				dirReportBankTrx := fmt.Sprintf("%s/%s/%s", s.comp.Config.Data.Reconciliation.ReportTRXPath, "bank", "notmatched")
+				e = csvhelper.DeleteDirectory(c, fs, dirReportBankTrx)
+			}
+
+			if e != nil {
+				return
+			}
+
+			parallel.ForEach(bankNames, func(item string, _ int) {
+				fileReportBankTrx := fmt.Sprintf("%s/%s/%s/%s_%s.csv", s.comp.Config.Data.Reconciliation.ReportTRXPath, "bank", "notmatched", item, fileNameSuffix)
 				e := csvhelper.StructToCSVFile(
 					c,
 					fs,
-					fileReportSystemTrx,
-					d,
-					isDeleteDirectory,
+					fileReportBankTrx,
+					bankTrxData[item],
+					false,
 				)
+				reconciliationSummary.FileMissingBankTrx[item] = fileReportBankTrx
+				log.Err(c, fmt.Sprintf(logTemplate, fileReportBankTrx), e)
+			})
 
-				reconciliationSummary.FileMatchedSystemTrx = fileReportSystemTrx
-				return nil, e
-			}
-		},
-		func(c context.Context, _ interface{}) (_ interface{}, e error) {
-			fileReportSystemTrx := fmt.Sprintf("%s/%s/%s/notmatched_%s.csv", s.comp.Config.Data.Reconciliation.ReportTRXPath, "system", "notmatched", fileNameSuffix)
-			defer func() {
-				log.Err(c, fmt.Sprintf(logTemplate, fileReportSystemTrx), e)
-			}()
-
-			if d, er := s.repo.RepoProcess.GetNotMatchedSystemTrx(ctx); er != nil || d == nil {
-				return nil, er
-			} else {
-				e := csvhelper.StructToCSVFile(
-					c,
-					fs,
-					fileReportSystemTrx,
-					d,
-					isDeleteDirectory,
-				)
-
-				reconciliationSummary.FileMissingSystemTrx = fileReportSystemTrx
-				return nil, e
-			}
-		},
-		func(c context.Context, _ interface{}) (_ interface{}, e error) {
-			if d, er := s.repo.RepoProcess.GetNotMatchedBankTrx(ctx); er != nil || d == nil {
-				return nil, er
-			} else {
-				bankTrxData := make(map[string][]process.NotMatchedBankTrx)
-				lo.ForEach(d, func(data process.NotMatchedBankTrx, _ int) {
-					data.Bank = strings.ToLower(data.Bank)
-					bankTrxData[data.Bank] = append(bankTrxData[data.Bank], data)
-				})
-
-				reconciliationSummary.FileMissingBankTrx = make(map[string]string)
-				bankNames := lo.Keys(bankTrxData)
-				if isDeleteDirectory {
-					dirReportBankTrx := fmt.Sprintf("%s/%s/%s", s.comp.Config.Data.Reconciliation.ReportTRXPath, "bank", "notmatched")
-					e = csvhelper.DeleteDirectory(c, fs, dirReportBankTrx)
-				}
-
-				if e != nil {
-					return
-				}
-
-				parallel.ForEach(bankNames, func(item string, _ int) {
-					fileReportBankTrx := fmt.Sprintf("%s/%s/%s/%s_%s.csv", s.comp.Config.Data.Reconciliation.ReportTRXPath, "bank", "notmatched", item, fileNameSuffix)
-					e := csvhelper.StructToCSVFile(
-						c,
-						fs,
-						fileReportBankTrx,
-						bankTrxData[item],
-						false,
-					)
-					reconciliationSummary.FileMissingBankTrx[item] = fileReportBankTrx
-					log.Err(c, fmt.Sprintf(logTemplate, fileReportBankTrx), e)
-				})
-
-				return nil, e
-			}
+			return nil, e
 		},
 	)
 
