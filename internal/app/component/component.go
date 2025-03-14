@@ -3,6 +3,7 @@ package component
 import (
 	"simple-reconciliation-service/internal/app/component/cconfig"
 	"simple-reconciliation-service/internal/app/component/cerror"
+	"simple-reconciliation-service/internal/app/component/cfs"
 	"simple-reconciliation-service/internal/app/component/clogger"
 	"simple-reconciliation-service/internal/app/component/csqlite"
 )
@@ -12,4 +13,5 @@ type Components struct {
 	Logger   *clogger.Logger
 	Error    *cerror.Error
 	DBSqlite *csqlite.DBSqlite
+	Fs       *cfs.Fs
 }

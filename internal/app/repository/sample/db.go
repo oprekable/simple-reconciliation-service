@@ -130,21 +130,25 @@ func (d *DB) Pre(ctx context.Context, listBank []string, startDate time.Time, to
 }
 
 func (d *DB) GetTrx(ctx context.Context) (returnData []TrxData, err error) {
+	stmtName := "QueryGetTrxData"
+	stmtQuery := QueryGetTrxData
+
 	defer func() {
 		log.Err(ctx, "[sample.NewDB] Exec GetData method in db", err)
 	}()
 
 	_, err = hunch.Waterfall(
 		ctx,
-		func(c context.Context, _ interface{}) (r interface{}, e error) {
-			return d.db.PrepareContext(c, QueryGetTrxData)
+		func(c context.Context, _ interface{}) (_ interface{}, e error) {
+			_, ok := d.stmtMap[stmtName]
+			if !ok {
+				d.stmtMap[stmtName], e = d.db.PrepareContext(c, stmtQuery) //nolint:sqlclosecheck
+			}
+
+			return
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			defer func() {
-				_ = i.(*sql.Stmt).Close()
-			}()
-
-			return i.(*sql.Stmt).QueryContext(
+			return d.stmtMap[stmtName].QueryContext(
 				c,
 			)
 		},

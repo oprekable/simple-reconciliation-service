@@ -60,7 +60,7 @@ func init() {
 		&root.FlagReportTRXPathValue,
 		root.FlagReportTRXPath,
 		root.FlagReportTRXPathShort,
-		filepath.Join(workDir, "sample", "report"),
+		filepath.Join(workDir, "report"),
 		root.FlagReportTRXPathUsage,
 	)
 

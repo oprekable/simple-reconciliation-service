@@ -59,8 +59,12 @@ run:
 	@#env $$(cat "params/.env" | grep -Ev '^#' | xargs) go run main.go
 
 base_args="--showlog=true --listbank=bca,bni,mandiri,bri,danamon --from=$$(date -j -v -10d '+%Y-%m-%d') --to=$$(date -j '+%Y-%m-%d')"
+#process_args="process ${base_args} -g=true -s=/tmp/sample/system -b=/tmp/sample/bank"
+#process_args="process ${base_args} -g=true"
 process_args="process ${base_args} -g=false"
-sample_args="sample ${base_args} --percentagematch=100 --amountdata=1000 -g=false"
+#sample_args="sample ${base_args} --percentagematch=100 --amountdata=1000 -g=true -s=/tmp/sample/system -b=/tmp/sample/bank"
+#sample_args="sample ${base_args} --percentagematch=100 --amountdata=1000 -g=true"
+sample_args="sample ${base_args} --percentagematch=10 --amountdata=1000 -g=false"
 
 .PHONY: echo-sample-args
 echo-sample-args:

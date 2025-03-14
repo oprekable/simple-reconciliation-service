@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/csv"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"simple-reconciliation-service/internal/app/component"
 	"simple-reconciliation-service/internal/app/repository"
+	"simple-reconciliation-service/internal/app/repository/process"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks/bca"
@@ -16,9 +18,11 @@ import (
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks/default_bank"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/systems"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/systems/default_system"
+	"simple-reconciliation-service/internal/pkg/utils/csvhelper"
 	"simple-reconciliation-service/internal/pkg/utils/log"
 	"simple-reconciliation-service/internal/pkg/utils/progressbarhelper"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -376,19 +380,106 @@ func (s *Svc) parse(ctx context.Context, afs afero.Fs) (trxData parser.TrxData, 
 	return
 }
 
-func (s *Svc) generateReconciliationSummaryAndFiles(ctx context.Context) (returnData ReconciliationSummary, err error) {
+func (s *Svc) generateReconciliationSummaryAndFiles(ctx context.Context, fs afero.Fs, isDeleteDirectory bool) (returnData ReconciliationSummary, err error) {
 	defer func() {
 		log.Err(ctx, "[process.NewSvc] GenerateReconciliation RepoProcess.GetReconciliationSummary executed", err)
 	}()
 
-	summary, er := s.repo.RepoProcess.GetReconciliationSummary(ctx)
-	if er != nil {
-		err = er
+	if summary, er := s.repo.RepoProcess.GetReconciliationSummary(ctx); er != nil {
+		return
+	} else {
+		err = deepcopier.Copy(&summary).To(&returnData)
+	}
+
+	if err != nil {
 		return
 	}
 
-	err = deepcopier.Copy(&summary).To(&returnData)
-	// TODO: generate match & not match files
+	fileNameSuffix := strconv.FormatInt(time.Now().Unix(), 10)
+
+	_, err = hunch.Waterfall(
+		ctx,
+		func(c context.Context, _ interface{}) (_ interface{}, e error) {
+			fileReportSystemTrx := fmt.Sprintf("%s/%s/%s/matched_%s.csv", s.comp.Config.Data.Reconciliation.ReportTRXPath, "system", "matched", fileNameSuffix)
+			defer func() {
+				log.Err(c, "[process.NewSvc] save csv file "+fileReportSystemTrx+" executed", e)
+			}()
+
+			if d, er := s.repo.RepoProcess.GetMatchedTrx(ctx); er != nil || d == nil {
+				return nil, er
+			} else {
+				e := csvhelper.StructToCSVFile(
+					c,
+					fs,
+					fileReportSystemTrx,
+					d,
+					isDeleteDirectory,
+				)
+
+				returnData.FileMatchedSystemTrx = fileReportSystemTrx
+				return nil, e
+			}
+		},
+		func(c context.Context, _ interface{}) (_ interface{}, e error) {
+			fileReportSystemTrx := fmt.Sprintf("%s/%s/%s/notmatched_%s.csv", s.comp.Config.Data.Reconciliation.ReportTRXPath, "system", "notmatched", fileNameSuffix)
+			defer func() {
+				log.Err(c, "[process.NewSvc] save csv file "+fileReportSystemTrx+" executed", e)
+			}()
+
+			if d, er := s.repo.RepoProcess.GetNotMatchedSystemTrx(ctx); er != nil || d == nil {
+				return nil, er
+			} else {
+				e := csvhelper.StructToCSVFile(
+					c,
+					fs,
+					fileReportSystemTrx,
+					d,
+					isDeleteDirectory,
+				)
+
+				returnData.FileMissingSystemTrx = fileReportSystemTrx
+				return nil, e
+			}
+		},
+		func(c context.Context, _ interface{}) (_ interface{}, e error) {
+			if d, er := s.repo.RepoProcess.GetNotMatchedBankTrx(ctx); er != nil || d == nil {
+				return nil, er
+			} else {
+				bankTrxData := make(map[string][]process.NotMatchedBankTrx)
+				lo.ForEach(d, func(data process.NotMatchedBankTrx, _ int) {
+					data.Bank = strings.ToLower(data.Bank)
+					bankTrxData[data.Bank] = append(bankTrxData[data.Bank], data)
+				})
+
+				returnData.FileMissingBankTrx = make(map[string]string)
+				bankNames := lo.Keys(bankTrxData)
+				if isDeleteDirectory {
+					dirReportBankTrx := fmt.Sprintf("%s/%s/%s", s.comp.Config.Data.Reconciliation.ReportTRXPath, "bank", "notmatched")
+					e = csvhelper.DeleteDirectory(c, fs, dirReportBankTrx)
+				}
+
+				if e != nil {
+					return
+				}
+
+				parallel.ForEach(bankNames, func(item string, _ int) {
+					fileReportBankTrx := fmt.Sprintf("%s/%s/%s/%s_%s.csv", s.comp.Config.Data.Reconciliation.ReportTRXPath, "bank", "notmatched", item, fileNameSuffix)
+					e := csvhelper.StructToCSVFile(
+						c,
+						fs,
+						fileReportBankTrx,
+						bankTrxData[item],
+						false,
+					)
+					returnData.FileMissingBankTrx[item] = fileReportBankTrx
+					log.Err(c, "[process.NewSvc] save csv file "+fileReportBankTrx+" executed", e)
+				})
+
+				return nil, e
+			}
+		},
+	)
+
 	return
 }
 
@@ -449,7 +540,7 @@ func (s *Svc) GenerateReconciliation(ctx context.Context, afs afero.Fs, bar *pro
 				log.Err(c, "[process.NewSvc] GenerateReconciliation generateReconciliationSummaryAndFiles executed", e)
 			}()
 
-			returnData, e = s.generateReconciliationSummaryAndFiles(c)
+			returnData, e = s.generateReconciliationSummaryAndFiles(c, afs, true)
 			return
 		},
 		func(c context.Context, i interface{}) (r interface{}, e error) {

@@ -22,4 +22,7 @@ type Repository interface {
 	GetReconciliationSummary(ctx context.Context) (returnData ReconciliationSummary, err error)
 	Post(ctx context.Context) (err error)
 	Close() (err error)
+	GetMatchedTrx(ctx context.Context) (returnData []MatchedTrx, err error)
+	GetNotMatchedSystemTrx(ctx context.Context) (returnData []NotMatchedSystemTrx, err error)
+	GetNotMatchedBankTrx(ctx context.Context) (returnData []NotMatchedBankTrx, err error)
 }

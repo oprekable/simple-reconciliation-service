@@ -165,6 +165,53 @@ FROM (
     FROM system_trx st
     LEFT JOIN reconciliation_map rm ON rm.TrxID = st.TrxID
 ) main_data
+;
+`
 
+	QueryGetMatchedTrx = `
+-- QueryGetMatchedTrx
+SELECT
+    st.TrxID AS SystemTrxTrxID,
+    bt.UniqueIdentifier AS BankTrxUniqueIdentifier,
+    STRFTIME('%F %T', st.TransactionTime) AS SystemTrxTransactionTime,
+    DATE(bt.Date) AS BankTrxDate,
+    st.Type AS SystemTrxType,
+    st.Amount AS SystemTrxAmount,
+    CASE
+        WHEN bt.Type == 'DEBIT' THEN bt.Amount * (-1)
+        ELSE bt.Amount
+    END AS BankTrxAmount,
+    bt.Bank
+FROM reconciliation_map rm
+INNER JOIN system_trx st on rm.TrxID = st.TrxID
+INNER JOIN bank_trx bt on rm.UniqueIdentifier = bt.UniqueIdentifier
+;
+`
+
+	QueryGetNotMatchedSystemTrx = `
+-- QueryGetNotMatchedSystemTrx
+SELECT st.TrxID                              AS TrxID,
+       STRFTIME('%F %T', st.TransactionTime) AS TransactionTime,
+       st.Type                               AS Type,
+       st.Amount                             AS Amount
+FROM system_trx st
+LEFT JOIN reconciliation_map rm on rm.TrxID = st.TrxID
+WHERE rm.TrxID IS NULL
+;
+`
+	QueryGetNotMatchedBankTrx = `
+-- QueryGetNotMatchedBankTrx
+SELECT
+    bt.UniqueIdentifier AS UniqueIdentifier,
+    bt.Bank AS Bank,
+    STRFTIME('%F', bt.Date) AS Date,
+    CASE
+        WHEN bt.Type == 'DEBIT' THEN bt.Amount * (-1)
+        ELSE bt.Amount
+    END AS Amount
+FROM bank_trx bt
+LEFT JOIN reconciliation_map rm on rm.UniqueIdentifier = bt.UniqueIdentifier
+WHERE rm.UniqueIdentifier IS NULL
+;
 `
 )

@@ -1,16 +1,5 @@
 package process
 
-type ReconciliationData struct {
-	SystemTrxID           *string  `db:"SystemTrxID"`
-	SystemTransactionTime *string  `db:"SystemTransactionTime"`
-	Type                  *string  `db:"type"`
-	BankUniqueIdentifier  *string  `db:"BankUniqueIdentifier"`
-	Bank                  *string  `db:"Bank"`
-	SystemFilePath        *string  `db:"-"`
-	BankFilePath          *string  `db:"-"`
-	Amount                *float64 `db:"amount"`
-}
-
 type ReconciliationSummary struct {
 	TotalSystemTrx      int64   `db:"total_system_trx"`
 	TotalMatchedTrx     int64   `db:"total_matched_trx"`
@@ -18,4 +7,29 @@ type ReconciliationSummary struct {
 	SumSystemTrx        float64 `db:"sum_system_trx"`
 	SumMatchedTrx       float64 `db:"sum_matched_trx"`
 	SumDiscrepanciesTrx float64 `db:"sum_discrepancies_trx"`
+}
+
+type MatchedTrx struct {
+	SystemTrxTrxID           string `db:"SystemTrxTrxID"`
+	BankTrxUniqueIdentifier  string `db:"BankTrxUniqueIdentifier"`
+	SystemTrxTransactionTime string `db:"SystemTrxTransactionTime"`
+	BankTrxDate              string `db:"BankTrxDate"`
+	SystemTrxType            string `db:"SystemTrxType"`
+	Bank                     string `db:"Bank"`
+	SystemTrxAmount          int64  `db:"SystemTrxAmount"`
+	BankTrxAmount            int64  `db:"BankTrxAmount"`
+}
+
+type NotMatchedSystemTrx struct {
+	TrxID           string `db:"TrxID"`
+	TransactionTime string `db:"TransactionTime"`
+	Type            string `db:"Type"`
+	Amount          int64  `db:"Amount"`
+}
+
+type NotMatchedBankTrx struct {
+	UniqueIdentifier string `db:"UniqueIdentifier"`
+	Bank             string `db:"Bank"`
+	Date             string `db:"Date"`
+	Amount           int64  `db:"Amount"`
 }

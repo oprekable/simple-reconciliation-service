@@ -14,7 +14,6 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/olekukonko/tablewriter"
-	"github.com/spf13/afero"
 )
 
 const name = "process"
@@ -52,7 +51,7 @@ func (h *Handler) Exec() error {
 	tableArgs.Render()
 	fmt.Println("")
 
-	summary, err := h.svc.SvcProcess.GenerateReconciliation(context.Background(), afero.NewOsFs(), bar)
+	summary, err := h.svc.SvcProcess.GenerateReconciliation(context.Background(), h.comp.Fs.LocalStorageFs, bar)
 	if err != nil {
 		return err
 	}
@@ -81,7 +80,13 @@ func (h *Handler) Exec() error {
 
 	dataFilePath := [][]string{
 		{"Matched system transaction data", summary.FileMatchedSystemTrx},
-		{"Missing system transaction data", summary.FileMissingSystemTrx},
+	}
+
+	if summary.FileMissingSystemTrx != "" {
+		dataFilePath = append(
+			dataFilePath,
+			[]string{"Missing system transaction data", summary.FileMissingSystemTrx},
+		)
 	}
 
 	for bank, value := range summary.FileMissingBankTrx {
