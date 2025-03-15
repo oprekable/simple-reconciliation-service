@@ -12,7 +12,7 @@ import (
 )
 
 func TestAddErr(t *testing.T) {
-	timeCtx, _ := testclock.UseTime(context.Background(), time.Unix(1742017752, 0))
+	timeCtx, _ := testclock.UseTime(context.Background(), time.Unix(1742017753, 0))
 
 	type args struct {
 		ctx context.Context
@@ -30,7 +30,7 @@ func TestAddErr(t *testing.T) {
 				ctx: context.WithValue(timeCtx, StartTime, time.Unix(1742017751, 0)),
 				err: nil,
 			},
-			want: []string{`{"level":"info","uptime":"1s","message":"Test"}`},
+			want: []string{`{"level":"info","uptime":"2s","message":"Test"}`},
 		},
 		{
 			name: "Err not nil",
@@ -39,10 +39,10 @@ func TestAddErr(t *testing.T) {
 				err: errors.New("test error"),
 			},
 			want: []string{
-				`{"level":"info","1742017752000000000":{"file":"`,
+				`{"level":"info","1742017753000000000":{"file":"`,
 				`","line":`,
 				`,"function":"`,
-				`"},"1742017752000000000":"test error","uptime":"1s","message":"Test"}`,
+				`"},"1742017753000000000":"test error","uptime":"2s","message":"Test"}`,
 			},
 		},
 	}
