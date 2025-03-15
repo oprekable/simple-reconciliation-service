@@ -110,7 +110,7 @@ func (h *Handler) Exec() error {
 	fmt.Println("")
 
 	bar.Describe("[cyan]Done")
-	memstats.PrintMemoryStats()
+	memstats.PrintMemoryStats(os.Stdout)
 
 	return nil
 }

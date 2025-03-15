@@ -39,7 +39,7 @@ func init() {
 		root.FlagTimeZoneUsage,
 	)
 
-	workDir := filepathhelper.GetWorkDir()
+	workDir := filepathhelper.GetWorkDir(filepathhelper.SystemCalls{})
 	rootCmd.PersistentFlags().StringVarP(
 		&root.FlagSystemTRXPathValue,
 		root.FlagSystemTRXPath,

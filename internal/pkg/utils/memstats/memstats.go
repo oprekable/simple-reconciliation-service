@@ -2,7 +2,7 @@ package memstats
 
 import (
 	"fmt"
-	"os"
+	"io"
 	"runtime"
 	"strconv"
 	"time"
@@ -11,7 +11,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-func PrintMemoryStats() {
+func PrintMemoryStats(w io.Writer) {
 	mem := MemStats()
 	data := [][]string{
 		{
@@ -64,18 +64,18 @@ func PrintMemoryStats() {
 		},
 	}
 
-	fmt.Println("")
-	fmt.Println("")
-	fmt.Println("-------- Memory Dump --------")
-	fmt.Println("")
-	tableDesc := tablewriter.NewWriter(os.Stdout)
+	_, _ = fmt.Fprintln(w, "")
+	_, _ = fmt.Fprintln(w, "")
+	_, _ = fmt.Fprintln(w, "-------- Memory Dump --------")
+	_, _ = fmt.Fprintln(w, "")
+	tableDesc := tablewriter.NewWriter(w)
 	tableDesc.SetHeader([]string{"Description", "Value"})
 	tableDesc.SetBorder(false)
 	tableDesc.SetAlignment(tablewriter.ALIGN_LEFT)
 	tableDesc.SetAutoWrapText(false)
 	tableDesc.AppendBulk(data)
 	tableDesc.Render()
-	fmt.Println("")
+	_, _ = fmt.Fprintln(w, "")
 }
 
 func MemStats() runtime.MemStats {

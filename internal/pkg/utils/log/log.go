@@ -2,6 +2,7 @@ package log
 
 import (
 	"context"
+	"go.chromium.org/luci/common/clock"
 	"runtime"
 	"strconv"
 	"time"
@@ -24,7 +25,7 @@ func (u UptimeHook) Run(e *zerolog.Event, _ zerolog.Level, _ string) {
 	uptime := ""
 
 	if startTime != nil {
-		uptime = time.Since(startTime.(time.Time)).String()
+		uptime = clock.Since(ctx, startTime.(time.Time)).String()
 	}
 
 	e.Str("uptime", uptime)
@@ -56,9 +57,10 @@ func AddErr(ctx context.Context, er error) {
 		return
 	}
 
+	nowUnixNano := clock.Get(ctx).Now().UnixNano()
 	zerolog.Ctx(ctx).UpdateContext(func(c zerolog.Context) zerolog.Context {
-		return c.Object(strconv.FormatInt(time.Now().UnixNano(), 10), New()).
-			AnErr(strconv.FormatInt(time.Now().UnixNano(), 10), er)
+		return c.Object(strconv.FormatInt(nowUnixNano, 10), New()).
+			AnErr(strconv.FormatInt(nowUnixNano, 10), er)
 	})
 }
 

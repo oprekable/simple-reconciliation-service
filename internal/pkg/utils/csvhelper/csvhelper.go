@@ -26,12 +26,8 @@ func StructToCSVFile(ctx context.Context, fs afero.Fs, filePath string, structDa
 			return csvutil.Marshal(structData)
 		},
 		func(c context.Context, i interface{}) (interface{}, error) {
-			if i != nil {
-				marshal := i.([]byte)
-				return nil, afero.WriteFile(fs, filePath, marshal, 0644)
-			}
-
-			return nil, nil
+			marshal := i.([]byte)
+			return nil, afero.WriteFile(fs, filePath, marshal, 0644)
 		},
 	)
 

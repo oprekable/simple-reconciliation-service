@@ -49,7 +49,7 @@ go-lint-fix-struct-staticcheck-govulncheck: install-tools generate
 
 .PHONY: test
 test:
-	@go test -count=1 -p=8 -parallel=8 -race -coverprofile=coverage.out ./...
+	@go test -gcflags=all=-l -count=1 -p=8 -parallel=8 -race -coverprofile=coverage.out ./...
 	@go tool cover -html=coverage.out
 
 .PHONY: run

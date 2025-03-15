@@ -87,7 +87,7 @@ func (h *Handler) Exec() (err error) {
 	fmt.Println("")
 
 	bar.Describe("[cyan]Done")
-	memstats.PrintMemoryStats()
+	memstats.PrintMemoryStats(os.Stdout)
 
 	return
 }

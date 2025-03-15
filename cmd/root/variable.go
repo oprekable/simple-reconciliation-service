@@ -50,7 +50,7 @@ const (
 
 var EmbedFS *embed.FS
 var nowDateString = time.Now().Format("2006-01-02")
-var workDir = filepathhelper.GetWorkDir()
+var workDir = filepathhelper.GetWorkDir(filepathhelper.SystemCalls{})
 var pathSystemTrx = filepath.Join(workDir, "sample", "system")
 var pathBankTrx = filepath.Join(workDir, "sample", "bank")
 var pathReportTrx = filepath.Join(workDir, "sample", "report")
