@@ -58,6 +58,10 @@ func NewSvc(
 func (s *Svc) parseSystemTrxFile(ctx context.Context, afs afero.Fs, filePath string) (returnData []*systems.SystemTrxData, err error) {
 	var f afero.File
 	f, err = afs.Open(filePath)
+	if err != nil {
+		log.Err(ctx, "[process.NewSvc] parseSystemTrxFile afs.Open - '"+filePath+"'", err)
+		return
+	}
 
 	defer func() {
 		if f != nil {
@@ -67,6 +71,7 @@ func (s *Svc) parseSystemTrxFile(ctx context.Context, afs afero.Fs, filePath str
 
 	var systemParser *default_system.SystemParser
 	systemParser, err = default_system.NewSystemParser(
+		&default_system.CSVSystemTrxData{},
 		csv.NewReader(f),
 		true,
 	)

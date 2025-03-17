@@ -3,6 +3,8 @@ package default_system
 import (
 	"context"
 	"encoding/csv"
+	"errors"
+	"fmt"
 	"io"
 	"math"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/systems"
@@ -50,6 +52,7 @@ func (u *CSVSystemTrxData) ToSystemTrxData() (returnData *systems.SystemTrxData,
 }
 
 type SystemParser struct {
+	dataStruct   systems.SystemTrxDataInterface
 	csvReader    *csv.Reader
 	parser       systems.SystemParserType
 	isHaveHeader bool
@@ -58,10 +61,16 @@ type SystemParser struct {
 var _ systems.ReconcileSystemData = (*SystemParser)(nil)
 
 func NewSystemParser(
+	dataStruct systems.SystemTrxDataInterface,
 	csvReader *csv.Reader,
 	isHaveHeader bool,
 ) (*SystemParser, error) {
+	if csvReader == nil || dataStruct == nil {
+		return nil, errors.New("csvReader or dataStruct is nil")
+	}
+
 	return &SystemParser{
+		dataStruct:   dataStruct,
 		parser:       systems.DefaultSystemParser,
 		csvReader:    csvReader,
 		isHaveHeader: isHaveHeader,
@@ -70,6 +79,14 @@ func NewSystemParser(
 
 func (d *SystemParser) ToSystemTrxData(ctx context.Context, filePath string) (returnData []*systems.SystemTrxData, err error) {
 	var dec *csvutil.Decoder
+	defer func() {
+		if r := recover(); r != nil {
+			errRecovery := fmt.Errorf("recovered from panic: %s", r)
+			log.AddErr(ctx, errRecovery)
+			return
+		}
+	}()
+
 	if d.isHaveHeader {
 		dec, err = csvutil.NewDecoder(d.csvReader)
 		if err != nil || dec == nil {
@@ -77,26 +94,19 @@ func (d *SystemParser) ToSystemTrxData(ctx context.Context, filePath string) (re
 			return nil, err
 		}
 	} else {
-		header, er := csvutil.Header(CSVSystemTrxData{}, "csv")
-		if er != nil {
-			log.AddErr(ctx, er)
-			return nil, er
-		}
-
-		dec, er = csvutil.NewDecoder(d.csvReader, header...)
-		if er != nil {
-			log.AddErr(ctx, er)
-			return nil, er
+		header, _ := csvutil.Header(d.dataStruct, "csv")
+		dec, err = csvutil.NewDecoder(d.csvReader, header...)
+		if err != nil {
+			log.AddErr(ctx, err)
+			return nil, err
 		}
 	}
 
 	for {
-		originalData := &CSVSystemTrxData{}
-		if err := dec.Decode(originalData); err == io.EOF {
+		originalData := d.dataStruct
+		err = dec.Decode(originalData)
+		if err != nil {
 			break
-		} else if err != nil {
-			log.AddErr(ctx, err)
-			return nil, err
 		}
 
 		systemTrxData, er := originalData.ToSystemTrxData()
@@ -107,6 +117,10 @@ func (d *SystemParser) ToSystemTrxData(ctx context.Context, filePath string) (re
 
 		systemTrxData.FilePath = filePath
 		returnData = append(returnData, systemTrxData)
+	}
+
+	if err == io.EOF {
+		err = nil
 	}
 
 	return
