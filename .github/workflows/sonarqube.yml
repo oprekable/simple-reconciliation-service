@@ -29,10 +29,10 @@ jobs:
             -Dsonar.organization=oprekable
             -Dsonar.projectKey=oprekable_simple-reconciliation-service
             -Dsonar.sources=.
-            -Dsonar.exclusions=**/*_test.go,**/vendor/**
+            -Dsonar.exclusions=**/*_test.go,**/vendor/**,**/_mock/**
             -Dsonar.tests=.
             -Dsonar.test.inclusions=**/*_test.go
-            -Dsonar.test.exclusions=**/vendor/**
+            -Dsonar.test.exclusions=**/vendor/**,**/_mock/**
             -Dsonar.scm.provider=git
             -Dsonar.go.coverage.reportPaths=coverage.out
         env:
