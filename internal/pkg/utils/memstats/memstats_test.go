@@ -32,22 +32,34 @@ func TestMemStats(t *testing.T) {
 func TestPrintMemoryStats(t *testing.T) {
 	tests := []struct {
 		name  string
-		wantW string
+		wantW []string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Ok",
+			wantW: []string{
+				"-------- Memory Dump --------",
+				"Total Allocated",
+				"Last GC cycle",
+			},
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := &bytes.Buffer{}
 			PrintMemoryStats(w)
-			if gotW := w.String(); gotW != tt.wantW {
-				t.Errorf("PrintMemoryStats() = %v, want %v", gotW, tt.wantW)
+			got := w.String()
+			for _, want := range tt.wantW {
+				if !strings.Contains(got, want) {
+					t.Errorf("PrintMemoryStats() = %v, want %v", got, tt.wantW)
+					break
+				}
 			}
 		})
 	}
 }
 
-func Test_humanizeNano(t *testing.T) {
+func TestHumanizeNano(t *testing.T) {
 	type args struct {
 		n uint64
 	}

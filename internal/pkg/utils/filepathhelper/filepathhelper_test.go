@@ -50,7 +50,7 @@ func TestGetWorkDir(t *testing.T) {
 	}
 }
 
-func TestSystemCalls_Getwd(t *testing.T) {
+func TestSystemCallsGetwd(t *testing.T) {
 	tests := []struct {
 		name    string
 		want    string
@@ -86,7 +86,7 @@ func TestSystemCalls_Getwd(t *testing.T) {
 	}
 }
 
-func TestSystemCalls_Executable(t *testing.T) {
+func TestSystemCallsExecutable(t *testing.T) {
 	tests := []struct {
 		name    string
 		want    string
@@ -119,7 +119,7 @@ func TestSystemCalls_Executable(t *testing.T) {
 	}
 }
 
-func TestSystemCalls_FilepathDir(t *testing.T) {
+func TestSystemCallsFilepathDir(t *testing.T) {
 	type args struct {
 		path string
 	}
