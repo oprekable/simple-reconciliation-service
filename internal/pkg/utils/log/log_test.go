@@ -145,7 +145,7 @@ func TestMsg(t *testing.T) {
 	}
 }
 
-func TestUptimeHook_Run(t *testing.T) {
+func TestUptimeHookRun(t *testing.T) {
 	timeCtx, _ := testclock.UseTime(context.Background(), time.Unix(1742017752, 0))
 	type args struct {
 		ctx context.Context
