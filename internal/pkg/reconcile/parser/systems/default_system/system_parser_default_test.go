@@ -12,10 +12,7 @@ import (
 
 func TestCSVSystemTrxDataGetAmount(t *testing.T) {
 	type fields struct {
-		TrxID           string
-		TransactionTime string
-		Type            string
-		Amount          float64
+		Amount float64
 	}
 
 	tests := []struct {
@@ -23,16 +20,26 @@ func TestCSVSystemTrxDataGetAmount(t *testing.T) {
 		fields fields
 		want   float64
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Ok - positive",
+			fields: fields{
+				Amount: 1000,
+			},
+			want: 1000,
+		},
+		{
+			name: "Ok - negative",
+			fields: fields{
+				Amount: -1000,
+			},
+			want: 1000,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &CSVSystemTrxData{
-				TrxID:           tt.fields.TrxID,
-				TransactionTime: tt.fields.TransactionTime,
-				Type:            tt.fields.Type,
-				Amount:          tt.fields.Amount,
+				Amount: tt.fields.Amount,
 			}
 			if got := u.GetAmount(); got != tt.want {
 				t.Errorf("GetAmount() = %v, want %v", got, tt.want)
@@ -43,10 +50,7 @@ func TestCSVSystemTrxDataGetAmount(t *testing.T) {
 
 func TestCSVSystemTrxDataGetTransactionTime(t *testing.T) {
 	type fields struct {
-		TrxID           string
 		TransactionTime string
-		Type            string
-		Amount          float64
 	}
 
 	tests := []struct {
@@ -54,16 +58,26 @@ func TestCSVSystemTrxDataGetTransactionTime(t *testing.T) {
 		fields fields
 		want   string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Ok - any string",
+			fields: fields{
+				TransactionTime: "any string",
+			},
+			want: "any string",
+		},
+		{
+			name: "Ok - datetime format",
+			fields: fields{
+				TransactionTime: "1999-11-10 22:58:56",
+			},
+			want: "1999-11-10 22:58:56",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &CSVSystemTrxData{
-				TrxID:           tt.fields.TrxID,
 				TransactionTime: tt.fields.TransactionTime,
-				Type:            tt.fields.Type,
-				Amount:          tt.fields.Amount,
 			}
 			if got := u.GetTransactionTime(); got != tt.want {
 				t.Errorf("GetTransactionTime() = %v, want %v", got, tt.want)
@@ -74,10 +88,7 @@ func TestCSVSystemTrxDataGetTransactionTime(t *testing.T) {
 
 func TestCSVSystemTrxDataGetTrxID(t *testing.T) {
 	type fields struct {
-		TrxID           string
-		TransactionTime string
-		Type            string
-		Amount          float64
+		TrxID string
 	}
 
 	tests := []struct {
@@ -85,17 +96,21 @@ func TestCSVSystemTrxDataGetTrxID(t *testing.T) {
 		fields fields
 		want   string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Ok",
+			fields: fields{
+				TrxID: "123",
+			},
+			want: "123",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &CSVSystemTrxData{
-				TrxID:           tt.fields.TrxID,
-				TransactionTime: tt.fields.TransactionTime,
-				Type:            tt.fields.Type,
-				Amount:          tt.fields.Amount,
+				TrxID: tt.fields.TrxID,
 			}
+
 			if got := u.GetTrxID(); got != tt.want {
 				t.Errorf("GetTrxID() = %v, want %v", got, tt.want)
 			}
@@ -105,10 +120,7 @@ func TestCSVSystemTrxDataGetTrxID(t *testing.T) {
 
 func TestCSVSystemTrxDataGetType(t *testing.T) {
 	type fields struct {
-		TrxID           string
-		TransactionTime string
-		Type            string
-		Amount          float64
+		Type string
 	}
 
 	tests := []struct {
@@ -116,17 +128,21 @@ func TestCSVSystemTrxDataGetType(t *testing.T) {
 		fields fields
 		want   systems.TrxType
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Ok",
+			fields: fields{
+				Type: "DEBIT",
+			},
+			want: "DEBIT",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &CSVSystemTrxData{
-				TrxID:           tt.fields.TrxID,
-				TransactionTime: tt.fields.TransactionTime,
-				Type:            tt.fields.Type,
-				Amount:          tt.fields.Amount,
+				Type: tt.fields.Type,
 			}
+
 			if got := u.GetType(); got != tt.want {
 				t.Errorf("GetType() = %v, want %v", got, tt.want)
 			}
@@ -148,7 +164,37 @@ func TestCSVSystemTrxDataToSystemTrxData(t *testing.T) {
 		wantReturnData *systems.SystemTrxData
 		wantErr        bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Ok",
+			fields: fields{
+				TrxID:           "8ce39d84-b932-43d7-add5-1cacf672b763",
+				TransactionTime: "1999-11-10 22:58:56",
+				Type:            "DEBIT",
+				Amount:          10000,
+			},
+			wantReturnData: &systems.SystemTrxData{
+				TrxID: "8ce39d84-b932-43d7-add5-1cacf672b763",
+				TransactionTime: func() time.Time {
+					t, _ := time.Parse("2006-01-02 15:04:05", "1999-11-10 22:58:56")
+					return t
+				}(),
+				Type:     "DEBIT",
+				FilePath: "",
+				Amount:   10000,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Error time parse",
+			fields: fields{
+				TrxID:           "8ce39d84-b932-43d7-add5-1cacf672b763",
+				TransactionTime: "adasd",
+				Type:            "DEBIT",
+				Amount:          10000,
+			},
+			wantReturnData: nil,
+			wantErr:        true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -159,11 +205,14 @@ func TestCSVSystemTrxDataToSystemTrxData(t *testing.T) {
 				Type:            tt.fields.Type,
 				Amount:          tt.fields.Amount,
 			}
+
 			gotReturnData, err := u.ToSystemTrxData()
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ToSystemTrxData() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+
 			if !reflect.DeepEqual(gotReturnData, tt.wantReturnData) {
 				t.Errorf("ToSystemTrxData() gotReturnData = %v, want %v", gotReturnData, tt.wantReturnData)
 			}
@@ -441,6 +490,7 @@ func TestSystemParserToSystemTrxData(t *testing.T) {
 			}
 
 			gotReturnData, err := d.ToSystemTrxData(tt.args.ctx, tt.args.filePath)
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ToSystemTrxData() error = %v, wantErr %v", err, tt.wantErr)
 				return
