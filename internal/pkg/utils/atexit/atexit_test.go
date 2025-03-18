@@ -38,7 +38,6 @@ func TestAdd(t *testing.T) {
 			Add(tt.args.y...)
 			if got := len(functions); got != tt.want {
 				t.Errorf("len(functions) = %v, want %v", got, tt.want)
-
 			}
 			functions = functions[:0]
 		})
@@ -52,8 +51,8 @@ func TestAtExit(t *testing.T) {
 
 	tests := []struct {
 		name string
-		args args
 		want string
+		args args
 	}{
 		{
 			name: "ok",

@@ -20,7 +20,6 @@ func (MockErrorSystemCalls) FilepathDir(path string) string {
 }
 
 func TestGetWorkDir(t *testing.T) {
-
 	tests := []struct {
 		name        string
 		systemCalls ISystemCalls

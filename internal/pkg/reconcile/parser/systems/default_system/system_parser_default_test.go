@@ -159,9 +159,9 @@ func TestCSVSystemTrxDataToSystemTrxData(t *testing.T) {
 	}
 
 	tests := []struct {
+		wantReturnData *systems.SystemTrxData
 		name           string
 		fields         fields
-		wantReturnData *systems.SystemTrxData
 		wantErr        bool
 	}{
 		{
@@ -228,9 +228,9 @@ func TestNewSystemParser(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		args    args
 		want    *SystemParser
+		args    args
+		name    string
 		wantErr bool
 	}{
 		{

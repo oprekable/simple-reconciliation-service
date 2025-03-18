@@ -2,10 +2,11 @@ package log
 
 import (
 	"context"
-	"go.chromium.org/luci/common/clock"
 	"runtime"
 	"strconv"
 	"time"
+
+	"go.chromium.org/luci/common/clock"
 
 	"github.com/rs/zerolog"
 )

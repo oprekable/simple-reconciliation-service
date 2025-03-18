@@ -29,7 +29,8 @@ func TestSignalTrapWait(t *testing.T) {
 			t:    TermSignalTrap(),
 			args: args{
 				ctx: func() context.Context {
-					ctx, _ := context.WithTimeout(context.Background(), 1*time.Millisecond)
+					ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+					defer cancel()
 					return ctx
 				}(),
 				f: func() {

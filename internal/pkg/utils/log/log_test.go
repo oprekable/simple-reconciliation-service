@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"github.com/rs/zerolog"
-	"go.chromium.org/luci/common/clock/testclock"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/rs/zerolog"
+	"go.chromium.org/luci/common/clock/testclock"
 )
 
 func TestAddErr(t *testing.T) {

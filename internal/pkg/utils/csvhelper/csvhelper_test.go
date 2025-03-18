@@ -2,9 +2,10 @@ package csvhelper
 
 import (
 	"context"
-	"github.com/spf13/afero"
 	"os"
 	"testing"
+
+	"github.com/spf13/afero"
 )
 
 func TestDeleteDirectory(t *testing.T) {
@@ -70,8 +71,8 @@ func TestStructToCSVFile(t *testing.T) {
 	type args struct {
 		ctx               context.Context
 		fs                afero.Fs
-		filePath          string
 		structData        interface{}
+		filePath          string
 		isDeleteDirectory bool
 	}
 

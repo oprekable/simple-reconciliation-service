@@ -2,8 +2,9 @@ package progressbarhelper
 
 import (
 	"bytes"
-	"github.com/schollz/progressbar/v3"
 	"testing"
+
+	"github.com/schollz/progressbar/v3"
 )
 
 func TestBarClear(t *testing.T) {
