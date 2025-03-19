@@ -36,11 +36,7 @@ func QueryContext[out any](ctx context.Context, db *sql.DB, stmtMap map[string]*
 		func(c context.Context, i interface{}) (interface{}, error) {
 			rows := i.(*sql.Rows)
 			switch reflect.TypeOf(returnData).Kind() {
-			case reflect.Slice:
-				{
-					return nil, scan.RowsStrict(&returnData, rows)
-				}
-			case reflect.Array:
+			case reflect.Slice, reflect.Array:
 				{
 					return nil, scan.RowsStrict(&returnData, rows)
 				}
