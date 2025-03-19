@@ -3,6 +3,7 @@ package bni
 import (
 	"context"
 	"encoding/csv"
+	"errors"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks/_helper"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks/bni/entity"
@@ -10,7 +11,7 @@ import (
 
 type BankParser struct {
 	csvReader    *csv.Reader
-	banks        banks.BankParserType
+	parser       banks.BankParserType
 	bank         string
 	isHaveHeader bool
 }
@@ -22,8 +23,12 @@ func NewBankParser(
 	csvReader *csv.Reader,
 	isHaveHeader bool,
 ) (*BankParser, error) {
+	if csvReader == nil {
+		return nil, errors.New("csvReader or dataStruct is nil")
+	}
+
 	return &BankParser{
-		banks:        banks.BNIBankParser,
+		parser:       banks.BNIBankParser,
 		csvReader:    csvReader,
 		isHaveHeader: isHaveHeader,
 		bank:         bank,
@@ -35,7 +40,7 @@ func (d *BankParser) GetBank() string {
 }
 
 func (d *BankParser) GetParser() banks.BankParserType {
-	return d.banks
+	return d.parser
 }
 
 func (d *BankParser) ToBankTrxData(ctx context.Context, filePath string) (returnData []*banks.BankTrxData, err error) {

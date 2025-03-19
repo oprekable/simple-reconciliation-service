@@ -3,6 +3,7 @@ package default_bank
 import (
 	"context"
 	"encoding/csv"
+	"errors"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks/_helper"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks/default_bank/entity"
@@ -22,6 +23,10 @@ func NewBankParser(
 	csvReader *csv.Reader,
 	isHaveHeader bool,
 ) (*BankParser, error) {
+	if csvReader == nil {
+		return nil, errors.New("csvReader or dataStruct is nil")
+	}
+
 	return &BankParser{
 		parser:       banks.DefaultBankParser,
 		bank:         bank,
