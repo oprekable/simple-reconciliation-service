@@ -15,7 +15,6 @@ require (
 	github.com/goccy/go-json v0.10.5
 	github.com/golangci/golangci-lint v1.64.6
 	github.com/google/wire v0.6.0
-	github.com/jmoiron/sqlx v1.4.0
 	github.com/joho/godotenv v1.5.1
 	github.com/jszwec/csvutil v1.10.0
 	github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/XSAM/otelsql"
-	"github.com/jmoiron/sqlx"
 	"github.com/rs/zerolog"
 	sqldblogger "github.com/simukti/sqldb-logger"
 	"github.com/simukti/sqldb-logger/logadapter/zerologadapter"
@@ -44,8 +43,7 @@ func NewSqliteDatabase(option DBSqliteOption, logger zerolog.Logger, isDoLogging
 			semconv.DBSystemSqlite,
 		),
 	); err == nil {
-		dbx := sqlx.NewDb(dbOtel, driverName)
-		db = sqldblogger.OpenDriver(dsn, dbx.Driver(), loggerAdapter)
+		db = sqldblogger.OpenDriver(dsn, dbOtel.Driver(), loggerAdapter)
 
 		// Register DB stats to meter
 		err = otelsql.RegisterDBStatsMetrics(
