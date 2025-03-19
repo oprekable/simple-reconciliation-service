@@ -35,29 +35,27 @@ func NewSqliteDatabase(option DBSqliteOption, logger zerolog.Logger, isDoLogging
 		loggerAdapter = zerologadapter.New(logger)
 	}
 
+	var dbOtel *sql.DB
 	driverName := "sqlite"
-	dbOtel, err := otelsql.Open(
+	if dbOtel, err = otelsql.Open(
 		driverName,
 		dsn,
 		otelsql.WithAttributes(
 			semconv.DBSystemSqlite,
 		),
-	)
+	); err == nil {
+		dbx := sqlx.NewDb(dbOtel, driverName)
+		db = sqldblogger.OpenDriver(dsn, dbx.Driver(), loggerAdapter)
 
-	if err != nil {
-		return nil, err
+		// Register DB stats to meter
+		err = otelsql.RegisterDBStatsMetrics(
+			db,
+			otelsql.WithAttributes(
+				semconv.DBSystemSqlite,
+			),
+		)
+
 	}
-
-	dbx := sqlx.NewDb(dbOtel, driverName)
-	db = sqldblogger.OpenDriver(dsn, dbx.Driver(), loggerAdapter)
-
-	// Register DB stats to meter
-	err = otelsql.RegisterDBStatsMetrics(
-		db,
-		otelsql.WithAttributes(
-			semconv.DBSystemSqlite,
-		),
-	)
 
 	return db, err
 }
