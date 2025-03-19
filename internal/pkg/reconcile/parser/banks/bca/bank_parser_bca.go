@@ -5,8 +5,8 @@ import (
 	"encoding/csv"
 	"errors"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks"
-	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks/_helper"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks/bca/entity"
+	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks/helper"
 )
 
 type BankParser struct {
@@ -36,7 +36,7 @@ func NewBankParser(
 }
 
 func (d *BankParser) ToBankTrxData(ctx context.Context, filePath string) (returnData []*banks.BankTrxData, err error) {
-	return _helper.ToBankTrxData(
+	return helper.ToBankTrxData(
 		ctx,
 		filePath,
 		d.isHaveHeader,

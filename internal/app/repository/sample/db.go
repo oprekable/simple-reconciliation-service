@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"simple-reconciliation-service/internal/app/repository/_helper"
+	"simple-reconciliation-service/internal/app/repository/helper"
 	"simple-reconciliation-service/internal/pkg/utils/log"
 	"strconv"
 	"strings"
@@ -31,7 +31,7 @@ func NewDB(
 }
 
 func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
-	stmtData := []_helper.StmtData{
+	stmtData := []helper.StmtData{
 		{
 			Name:  "QueryDropTableBanks",
 			Query: QueryDropTableBanks,
@@ -46,16 +46,16 @@ func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
 		},
 	}
 
-	return _helper.ExecTxQueries(ctx, d.db, tx, d.stmtMap, stmtData)
+	return helper.ExecTxQueries(ctx, d.db, tx, d.stmtMap, stmtData)
 }
 
 func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, startDate time.Time, toDate time.Time, limitTrxData int64, matchPercentage int) (err error) {
-	return _helper.ExecTxQueries(
+	return helper.ExecTxQueries(
 		ctx,
 		d.db,
 		tx,
 		d.stmtMap,
-		[]_helper.StmtData{
+		[]helper.StmtData{
 			{
 				Name:  "QueryCreateTableArguments",
 				Query: QueryCreateTableArguments,
@@ -96,7 +96,7 @@ func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, st
 func (d *DB) postWith(ctx context.Context, methodName string, extraExec hunch.ExecutableInSequence) (err error) {
 	var tx *sql.Tx
 	defer func() {
-		log.Err(ctx, fmt.Sprintf("[sample.NewDB] Exec %s method in db", methodName), _helper.CommitOrRollback(tx, err))
+		log.Err(ctx, fmt.Sprintf("[sample.NewDB] Exec %s method in db", methodName), helper.CommitOrRollback(tx, err))
 	}()
 
 	_, err = hunch.Waterfall(
@@ -131,11 +131,11 @@ func (d *DB) GetTrx(ctx context.Context) (returnData []TrxData, err error) {
 		log.Err(ctx, "[sample.NewDB] Exec GetData method in db", err)
 	}()
 
-	returnData, err = _helper.QueryContext[[]TrxData](
+	returnData, err = helper.QueryContext[[]TrxData](
 		ctx,
 		d.db,
 		d.stmtMap,
-		_helper.StmtData{
+		helper.StmtData{
 			Name:  "QueryGetTrxData",
 			Query: QueryGetTrxData,
 			Args:  nil,

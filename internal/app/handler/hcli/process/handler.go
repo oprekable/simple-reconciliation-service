@@ -6,7 +6,7 @@ import (
 	"os"
 	"simple-reconciliation-service/cmd/root"
 	"simple-reconciliation-service/internal/app/component"
-	"simple-reconciliation-service/internal/app/handler/hcli/_helper"
+	"simple-reconciliation-service/internal/app/handler/hcli/helper"
 	"simple-reconciliation-service/internal/app/repository"
 	"simple-reconciliation-service/internal/app/service"
 	"simple-reconciliation-service/internal/pkg/utils/memstats"
@@ -32,9 +32,9 @@ func (h *Handler) Exec() error {
 	if h.comp == nil || h.svc == nil || h.repo == nil {
 		return nil
 	}
-	bar := _helper.InitProgressBar()
+	bar := helper.InitProgressBar()
 	formatText := "-%s --%s"
-	args := _helper.InitCommonArgs(
+	args := helper.InitCommonArgs(
 		[][]string{
 			{
 				fmt.Sprintf(formatText, root.FlagReportTRXPathShort, root.FlagReportTRXPath),

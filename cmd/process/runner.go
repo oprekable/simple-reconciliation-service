@@ -1,7 +1,7 @@
 package process
 
 import (
-	"simple-reconciliation-service/cmd/_helper"
+	"simple-reconciliation-service/cmd/helper"
 	"simple-reconciliation-service/cmd/root"
 	"simple-reconciliation-service/internal/app/component/csqlite"
 
@@ -15,5 +15,5 @@ func Runner(cmd *cobra.Command, args []string) (er error) {
 		dBPath.WriteDBPath = "./reconciliation.db"
 	}
 
-	return _helper.RunnerSubCommand(cmd, args, dBPath)
+	return helper.RunnerSubCommand(cmd, args, dBPath)
 }
