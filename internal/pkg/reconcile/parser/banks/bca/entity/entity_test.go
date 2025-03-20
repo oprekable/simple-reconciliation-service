@@ -148,8 +148,8 @@ func TestCSVBankTrxDataGetType(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		fields fields
 		want   banks.TrxType
+		fields fields
 	}{
 		{
 			name: "DEBIT",
@@ -221,9 +221,9 @@ func TestCSVBankTrxDataToBankTrxData(t *testing.T) {
 	}
 
 	tests := []struct {
+		wantReturnData *banks.BankTrxData
 		name           string
 		fields         fields
-		wantReturnData *banks.BankTrxData
 		wantErr        bool
 	}{
 		{

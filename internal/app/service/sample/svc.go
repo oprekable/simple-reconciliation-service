@@ -7,9 +7,9 @@ import (
 	"simple-reconciliation-service/internal/app/repository"
 	"simple-reconciliation-service/internal/app/repository/sample"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks"
-	entity_bca "simple-reconciliation-service/internal/pkg/reconcile/parser/banks/bca/entity"
-	entity_bni "simple-reconciliation-service/internal/pkg/reconcile/parser/banks/bni/entity"
-	entity_default_bank "simple-reconciliation-service/internal/pkg/reconcile/parser/banks/default_bank/entity"
+	entitybca "simple-reconciliation-service/internal/pkg/reconcile/parser/banks/bca/entity"
+	entitybni "simple-reconciliation-service/internal/pkg/reconcile/parser/banks/bni/entity"
+	entitydefaultbank "simple-reconciliation-service/internal/pkg/reconcile/parser/banks/default_bank/entity"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/systems"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/systems/default_system"
 	"simple-reconciliation-service/internal/pkg/utils/csvhelper"
@@ -80,7 +80,7 @@ func (s *Svc) parse(data sample.TrxData) (systemTrxData systems.SystemTrxDataInt
 		switch strings.ToUpper(bank) {
 		case "BCA":
 			{
-				bankTrxData = &entity_bca.CSVBankTrxData{
+				bankTrxData = &entitybca.CSVBankTrxData{
 					BCAUniqueIdentifier: data.UniqueIdentifier,
 					BCADate:             data.Date,
 					BCAAmount:           data.Amount * multiplier,
@@ -89,7 +89,7 @@ func (s *Svc) parse(data sample.TrxData) (systemTrxData systems.SystemTrxDataInt
 			}
 		case "BNI":
 			{
-				bankTrxData = &entity_bni.CSVBankTrxData{
+				bankTrxData = &entitybni.CSVBankTrxData{
 					BNIUniqueIdentifier: data.UniqueIdentifier,
 					BNIDate:             data.Date,
 					BNIAmount:           data.Amount * multiplier,
@@ -98,7 +98,7 @@ func (s *Svc) parse(data sample.TrxData) (systemTrxData systems.SystemTrxDataInt
 			}
 		default:
 			{
-				bankTrxData = &entity_default_bank.CSVBankTrxData{
+				bankTrxData = &entitydefaultbank.CSVBankTrxData{
 					DefaultUniqueIdentifier: data.UniqueIdentifier,
 					DefaultDate:             data.Date,
 					DefaultAmount:           data.Amount * multiplier,
@@ -256,12 +256,12 @@ func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice []banks.
 	formatText := "[sample.NewSvc] save csv file %s executed"
 
 	switch trxDataSlice[0].(type) {
-	case *entity_bca.CSVBankTrxData:
+	case *entitybca.CSVBankTrxData:
 		{
-			bd := make([]*entity_bca.CSVBankTrxData, 0, len(trxDataSlice))
+			bd := make([]*entitybca.CSVBankTrxData, 0, len(trxDataSlice))
 
 			lo.ForEach(trxDataSlice, func(data banks.BankTrxDataInterface, _ int) {
-				bd = append(bd, data.(*entity_bca.CSVBankTrxData))
+				bd = append(bd, data.(*entitybca.CSVBankTrxData))
 			})
 
 			totalData = int64(len(bd))
@@ -278,11 +278,11 @@ func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice []banks.
 				return nil, er
 			}
 		}
-	case *entity_bni.CSVBankTrxData:
+	case *entitybni.CSVBankTrxData:
 		{
-			bd := make([]*entity_bni.CSVBankTrxData, 0, len(trxDataSlice))
+			bd := make([]*entitybni.CSVBankTrxData, 0, len(trxDataSlice))
 			lo.ForEach(trxDataSlice, func(data banks.BankTrxDataInterface, _ int) {
-				bd = append(bd, data.(*entity_bni.CSVBankTrxData))
+				bd = append(bd, data.(*entitybni.CSVBankTrxData))
 			})
 			totalData = int64(len(bd))
 			executor = func(ct context.Context) (interface{}, error) {
@@ -300,9 +300,9 @@ func (s *Svc) appendExecutor(fs afero.Fs, filePath string, trxDataSlice []banks.
 		}
 	default:
 		{
-			bd := make([]*entity_default_bank.CSVBankTrxData, 0, len(trxDataSlice))
+			bd := make([]*entitydefaultbank.CSVBankTrxData, 0, len(trxDataSlice))
 			lo.ForEach(trxDataSlice, func(data banks.BankTrxDataInterface, _ int) {
-				bd = append(bd, data.(*entity_default_bank.CSVBankTrxData))
+				bd = append(bd, data.(*entitydefaultbank.CSVBankTrxData))
 			})
 			totalData = int64(len(bd))
 			executor = func(ct context.Context) (interface{}, error) {

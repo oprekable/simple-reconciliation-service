@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
-	"github.com/jszwec/csvutil"
 	"io"
 	"simple-reconciliation-service/internal/pkg/reconcile/parser/banks"
 	"simple-reconciliation-service/internal/pkg/utils/log"
+
+	"github.com/jszwec/csvutil"
 )
 
 func ToBankTrxData(ctx context.Context, filePath string, isHaveHeader bool, bank string, csvReader *csv.Reader, originalData banks.BankTrxDataInterface) (returnData []*banks.BankTrxData, err error) {

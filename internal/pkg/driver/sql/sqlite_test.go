@@ -1,14 +1,15 @@
 package sql
 
 import (
-	"github.com/rs/zerolog"
 	"testing"
+
+	"github.com/rs/zerolog"
 )
 
 func TestNewSqliteDatabase(t *testing.T) {
 	type args struct {
-		option      DBSqliteOption
 		logger      zerolog.Logger
+		option      DBSqliteOption
 		isDoLogging bool
 	}
 

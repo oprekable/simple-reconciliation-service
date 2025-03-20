@@ -167,15 +167,15 @@ func TestBankParserToBankTrxData(t *testing.T) {
 
 func TestNewBankParser(t *testing.T) {
 	type args struct {
-		bank         string
 		csvReader    *csv.Reader
+		bank         string
 		isHaveHeader bool
 	}
 
 	tests := []struct {
+		want    *BankParser
 		name    string
 		args    args
-		want    *BankParser
 		wantErr bool
 	}{
 		{

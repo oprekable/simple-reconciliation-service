@@ -15,7 +15,7 @@ func (MockErrorSystemCalls) Executable() (string, error) {
 	return "/foo", nil
 }
 
-func (MockErrorSystemCalls) FilepathDir(path string) string {
+func (MockErrorSystemCalls) FilepathDir(_ string) string {
 	return "/"
 }
 

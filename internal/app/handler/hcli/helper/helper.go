@@ -2,11 +2,12 @@ package helper
 
 import (
 	"fmt"
-	"github.com/k0kubun/go-ansi"
-	"github.com/schollz/progressbar/v3"
 	"simple-reconciliation-service/cmd/root"
 	"strconv"
 	"strings"
+
+	"github.com/k0kubun/go-ansi"
+	"github.com/schollz/progressbar/v3"
 )
 
 func InitProgressBar() *progressbar.ProgressBar {

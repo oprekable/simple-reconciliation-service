@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"github.com/spf13/cobra"
 	"simple-reconciliation-service/cmd/root"
 	"simple-reconciliation-service/internal/app/component/cconfig"
 	"simple-reconciliation-service/internal/app/component/clogger"
@@ -12,6 +11,8 @@ import (
 	"simple-reconciliation-service/variable"
 	"strconv"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 func RunnerSubCommand(cmd *cobra.Command, _ []string, dBPath csqlite.DBPath) (er error) {

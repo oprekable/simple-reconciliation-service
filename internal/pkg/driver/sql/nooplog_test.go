@@ -2,15 +2,16 @@ package sql
 
 import (
 	"context"
-	sqldblogger "github.com/simukti/sqldb-logger"
 	"reflect"
 	"testing"
+
+	sqldblogger "github.com/simukti/sqldb-logger"
 )
 
 func TestNewNoopLog(t *testing.T) {
 	tests := []struct {
-		name string
 		want sqldblogger.Logger
+		name string
 	}{
 		{
 			name: "Ok",
@@ -30,9 +31,9 @@ func TestNewNoopLog(t *testing.T) {
 func TestNoopLogAdapter_Log(t *testing.T) {
 	type args struct {
 		in0 context.Context
-		in1 sqldblogger.Level
-		in2 string
 		in3 map[string]interface{}
+		in2 string
+		in1 sqldblogger.Level
 	}
 
 	tests := []struct {

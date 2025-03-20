@@ -16,11 +16,11 @@ func TestToBankTrxData(t *testing.T) {
 
 	type args struct {
 		ctx          context.Context
-		filePath     string
-		isHaveHeader bool
-		bank         string
-		csvReader    *csv.Reader
 		originalData banks.BankTrxDataInterface
+		csvReader    *csv.Reader
+		filePath     string
+		bank         string
+		isHaveHeader bool
 	}
 
 	tests := []struct {

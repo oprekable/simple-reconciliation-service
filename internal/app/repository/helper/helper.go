@@ -3,11 +3,12 @@ package helper
 import (
 	"context"
 	"database/sql"
+	"reflect"
+	"simple-reconciliation-service/internal/app/err/core"
+
 	"github.com/aaronjan/hunch"
 	"github.com/blockloop/scan/v2"
 	"github.com/pkg/errors"
-	"reflect"
-	"simple-reconciliation-service/internal/app/err/core"
 )
 
 type StmtData struct {
@@ -60,7 +61,7 @@ func ExecTxQueries(ctx context.Context, db *sql.DB, tx *sql.Tx, stmtMap map[stri
 			executableInSequence,
 			func(c context.Context, _ interface{}) (r interface{}, e error) {
 				if _, ok := stmtMap[stmtData[k].Name]; !ok {
-					stmtMap[stmtData[k].Name], e = db.PrepareContext(
+					stmtMap[stmtData[k].Name], e = db.PrepareContext( //nolint:sqlclosecheck
 						c,
 						stmtData[k].Query,
 					)
@@ -70,7 +71,7 @@ func ExecTxQueries(ctx context.Context, db *sql.DB, tx *sql.Tx, stmtMap map[stri
 					}
 				}
 
-				return tx.StmtContext(c, stmtMap[stmtData[k].Name]).ExecContext( //nolint:sqlclosecheck
+				return stmtMap[stmtData[k].Name].ExecContext( //nolint:sqlclosecheck
 					c,
 					stmtData[k].Args...,
 				)

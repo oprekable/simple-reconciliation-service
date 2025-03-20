@@ -52,7 +52,6 @@ func NewSqliteDatabase(option DBSqliteOption, logger zerolog.Logger, isDoLogging
 				semconv.DBSystemSqlite,
 			),
 		)
-
 	}
 
 	return db, err
