@@ -671,9 +671,9 @@ func TestDBPre(t *testing.T) {
 	}
 
 	tests := []struct {
-		args    args
 		fields  fields
 		name    string
+		args    args
 		wantErr bool
 	}{
 		{
@@ -783,9 +783,9 @@ func TestDBCreateTables(t *testing.T) {
 	}
 
 	tests := []struct {
-		args    args
 		fields  fields
 		name    string
+		args    args
 		wantErr bool
 	}{
 		{

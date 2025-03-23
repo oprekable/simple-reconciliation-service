@@ -76,7 +76,7 @@ func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, st
 					_ = json.NewEncoder(b).Encode(listBank)
 
 					return []any{
-						b.String(),
+						strings.TrimRight(b.String(), "\n"),
 					}
 				}(),
 			},
