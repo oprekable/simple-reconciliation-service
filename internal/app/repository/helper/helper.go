@@ -54,14 +54,18 @@ func QueryContext[out any](ctx context.Context, db *sql.DB, stmtMap map[string]*
 	return
 }
 
-func ExecTxQueries(ctx context.Context, db *sql.DB, tx *sql.Tx, stmtMap map[string]*sql.Stmt, stmtData []StmtData) (err error) {
+func ExecTxQueries(ctx context.Context, tx *sql.Tx, stmtMap map[string]*sql.Stmt, stmtData []StmtData) (err error) {
 	var executableInSequence []hunch.ExecutableInSequence
 	for k := range stmtData {
 		executableInSequence = append(
 			executableInSequence,
 			func(c context.Context, _ interface{}) (r interface{}, e error) {
+				defer func() {
+					delete(stmtMap, stmtData[k].Name)
+				}()
+
 				if _, ok := stmtMap[stmtData[k].Name]; !ok {
-					stmtMap[stmtData[k].Name], e = db.PrepareContext( //nolint:sqlclosecheck
+					stmtMap[stmtData[k].Name], e = tx.PrepareContext( //nolint:sqlclosecheck
 						c,
 						stmtData[k].Query,
 					)

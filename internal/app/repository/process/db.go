@@ -34,6 +34,10 @@ func NewDB(
 
 func (d *DB) dropTableWith(ctx context.Context, methodName string, extraExec hunch.ExecutableInSequence) (err error) {
 	var tx *sql.Tx
+	defer func() {
+		log.Err(ctx, fmt.Sprintf("[process.NewDB] Exec %s method in db", methodName), helper.CommitOrRollback(tx, err))
+	}()
+
 	_, err = hunch.Waterfall(
 		ctx,
 		func(c context.Context, _ interface{}) (r interface{}, e error) {
@@ -64,14 +68,10 @@ func (d *DB) dropTableWith(ctx context.Context, methodName string, extraExec hun
 				},
 			}
 
-			return tx, helper.ExecTxQueries(ctx, d.db, tx, d.stmtMap, stmtData)
+			return tx, helper.ExecTxQueries(ctx, tx, d.stmtMap, stmtData)
 		},
 		extraExec,
 	)
-
-	defer func() {
-		log.Err(ctx, fmt.Sprintf("[process.NewDB] Exec %s method in db", methodName), helper.CommitOrRollback(tx, err))
-	}()
 
 	return
 }
@@ -79,7 +79,6 @@ func (d *DB) dropTableWith(ctx context.Context, methodName string, extraExec hun
 func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, startDate time.Time, toDate time.Time) (err error) {
 	return helper.ExecTxQueries(
 		ctx,
-		d.db,
 		tx,
 		d.stmtMap,
 		[]helper.StmtData{
@@ -102,7 +101,7 @@ func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, st
 					_ = json.NewEncoder(b).Encode(listBank)
 
 					return []any{
-						b.String(),
+						strings.TrimRight(b.String(), "\n"),
 					}
 				}(),
 			},
@@ -162,7 +161,7 @@ func (d *DB) importInterface(ctx context.Context, methodName string, query strin
 				},
 			}
 
-			return nil, helper.ExecTxQueries(ctx, d.db, tx, d.stmtMap, stmtData)
+			return nil, helper.ExecTxQueries(ctx, tx, d.stmtMap, stmtData)
 		},
 	)
 
@@ -203,7 +202,7 @@ func (d *DB) GenerateReconciliationMap(ctx context.Context, minAmount float64, m
 				},
 			}
 
-			return nil, helper.ExecTxQueries(ctx, d.db, tx, d.stmtMap, stmtData)
+			return nil, helper.ExecTxQueries(ctx, tx, d.stmtMap, stmtData)
 		},
 	)
 

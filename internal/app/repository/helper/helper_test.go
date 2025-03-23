@@ -80,14 +80,9 @@ func TestCommitOrRollback(t *testing.T) {
 }
 
 func TestExecTxQueries(t *testing.T) {
-	type dbTx struct {
-		db *sql.DB
-		tx *sql.Tx
-	}
-
 	type args struct {
 		ctx      context.Context
-		dbTx     dbTx
+		tx       *sql.Tx
 		stmtMap  map[string]*sql.Stmt
 		stmtData []StmtData
 	}
@@ -101,7 +96,7 @@ func TestExecTxQueries(t *testing.T) {
 			name: "Ok",
 			args: args{
 				ctx: context.Background(),
-				dbTx: func() dbTx {
+				tx: func() *sql.Tx {
 					db, s, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 					s.ExpectBegin()
 					r, _ := db.BeginTx(context.Background(), nil)
@@ -114,10 +109,7 @@ func TestExecTxQueries(t *testing.T) {
 						WillReturnResult(sqlmock.NewResult(1, 1))
 					s.ExpectCommit()
 
-					return dbTx{
-						db: db,
-						tx: r,
-					}
+					return r
 				}(),
 				stmtMap: make(map[string]*sql.Stmt),
 				stmtData: []StmtData{
@@ -137,7 +129,7 @@ func TestExecTxQueries(t *testing.T) {
 			name: "Error - PrepareContext",
 			args: args{
 				ctx: context.Background(),
-				dbTx: func() dbTx {
+				tx: func() *sql.Tx {
 					db, s, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 					s.ExpectBegin()
 
@@ -146,10 +138,7 @@ func TestExecTxQueries(t *testing.T) {
 						WillReturnError(sql.ErrConnDone)
 					s.ExpectRollback()
 
-					return dbTx{
-						db: db,
-						tx: r,
-					}
+					return r
 				}(),
 				stmtMap: make(map[string]*sql.Stmt),
 				stmtData: []StmtData{
@@ -169,7 +158,7 @@ func TestExecTxQueries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := ExecTxQueries(tt.args.ctx, tt.args.dbTx.db, tt.args.dbTx.tx, tt.args.stmtMap, tt.args.stmtData); (err != nil) != tt.wantErr {
+			if err := ExecTxQueries(tt.args.ctx, tt.args.tx, tt.args.stmtMap, tt.args.stmtData); (err != nil) != tt.wantErr {
 				t.Errorf("ExecTxQueries() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

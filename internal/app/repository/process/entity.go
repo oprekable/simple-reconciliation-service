@@ -10,26 +10,26 @@ type ReconciliationSummary struct {
 }
 
 type MatchedTrx struct {
-	SystemTrxTrxID           string `db:"SystemTrxTrxID"`
-	BankTrxUniqueIdentifier  string `db:"BankTrxUniqueIdentifier"`
-	SystemTrxTransactionTime string `db:"SystemTrxTransactionTime"`
-	BankTrxDate              string `db:"BankTrxDate"`
-	SystemTrxType            string `db:"SystemTrxType"`
-	Bank                     string `db:"Bank"`
-	SystemTrxAmount          int64  `db:"SystemTrxAmount"`
-	BankTrxAmount            int64  `db:"BankTrxAmount"`
+	SystemTrxTrxID           string  `db:"SystemTrxTrxID"`
+	BankTrxUniqueIdentifier  string  `db:"BankTrxUniqueIdentifier"`
+	SystemTrxTransactionTime string  `db:"SystemTrxTransactionTime"`
+	BankTrxDate              string  `db:"BankTrxDate"`
+	SystemTrxType            string  `db:"SystemTrxType"`
+	Bank                     string  `db:"Bank"`
+	SystemTrxAmount          float64 `db:"SystemTrxAmount"`
+	BankTrxAmount            float64 `db:"BankTrxAmount"`
 }
 
 type NotMatchedSystemTrx struct {
-	TrxID           string `db:"TrxID"`
-	TransactionTime string `db:"TransactionTime"`
-	Type            string `db:"Type"`
-	Amount          int64  `db:"Amount"`
+	TrxID           string  `db:"TrxID"`
+	TransactionTime string  `db:"TransactionTime"`
+	Type            string  `db:"Type"`
+	Amount          float64 `db:"Amount"`
 }
 
 type NotMatchedBankTrx struct {
-	UniqueIdentifier string `db:"UniqueIdentifier"`
-	Bank             string `db:"Bank"`
-	Date             string `db:"Date"`
-	Amount           int64  `db:"Amount"`
+	UniqueIdentifier string  `db:"UniqueIdentifier"`
+	Bank             string  `db:"Bank"`
+	Date             string  `db:"Date"`
+	Amount           float64 `db:"Amount"`
 }

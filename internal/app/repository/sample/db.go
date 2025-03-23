@@ -46,13 +46,12 @@ func (d *DB) dropTables(ctx context.Context, tx *sql.Tx) (err error) {
 		},
 	}
 
-	return helper.ExecTxQueries(ctx, d.db, tx, d.stmtMap, stmtData)
+	return helper.ExecTxQueries(ctx, tx, d.stmtMap, stmtData)
 }
 
 func (d *DB) createTables(ctx context.Context, tx *sql.Tx, listBank []string, startDate time.Time, toDate time.Time, limitTrxData int64, matchPercentage int) (err error) {
 	return helper.ExecTxQueries(
 		ctx,
-		d.db,
 		tx,
 		d.stmtMap,
 		[]helper.StmtData{

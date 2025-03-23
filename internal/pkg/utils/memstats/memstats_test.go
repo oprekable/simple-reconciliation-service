@@ -55,6 +55,7 @@ func TestPrintMemoryStats(t *testing.T) {
 					break
 				}
 			}
+			w.Reset()
 		})
 	}
 }
