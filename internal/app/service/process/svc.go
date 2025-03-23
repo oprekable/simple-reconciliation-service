@@ -67,31 +67,30 @@ func (s *Svc) parseSystemTrxFile(ctx context.Context, afs afero.Fs, filePath str
 		if f != nil {
 			_ = f.Close()
 		}
+
+		log.Err(ctx, "[process.NewSvc] parseSystemTrxFile parse - '"+filePath+"' executed", err)
 	}()
 
 	var systemParser *default_system.SystemParser
-	systemParser, err = default_system.NewSystemParser(
+	if systemParser, err = default_system.NewSystemParser(
 		&default_system.CSVSystemTrxData{},
 		csv.NewReader(f),
 		true,
-	)
-
-	log.Err(ctx, "[process.NewSvc] parseSystemTrxFile - '"+filePath+"'", err)
-
-	if err != nil {
-		return
+	); err == nil {
+		returnData, err = systemParser.ToSystemTrxData(ctx, filePath)
 	}
-
-	returnData, err = systemParser.ToSystemTrxData(ctx, filePath)
-	log.Err(ctx, "[process.NewSvc] parseSystemTrxFile parse.ToSystemTrxData executed", err)
 
 	return
 }
 
 func (s *Svc) parseSystemTrxFiles(ctx context.Context, afs afero.Fs) (returnData []*systems.SystemTrxData, err error) {
 	var filePathSystemTrx []string
+	defer func() {
+		log.Err(ctx, "[process.NewSvc] parseSystemTrxFiles executed", err)
+	}()
+
 	cleanPath := filepath.Clean(s.comp.Config.Data.Reconciliation.SystemTRXPath)
-	err = afero.Walk(afs, cleanPath, func(path string, info fs.FileInfo, err error) error {
+	if err = afero.Walk(afs, cleanPath, func(path string, info fs.FileInfo, err error) error {
 		if filepath.Ext(path) == ".csv" {
 			filePathSystemTrx = append(
 				filePathSystemTrx,
@@ -100,27 +99,21 @@ func (s *Svc) parseSystemTrxFiles(ctx context.Context, afs afero.Fs) (returnData
 		}
 
 		return nil
-	})
+	}); err == nil {
+		sliceMutex := sync.Mutex{}
+		wg := sync.WaitGroup{}
 
-	log.Err(ctx, "[process.NewSvc] parseSystemTrxFiles afero.Walk SystemTRXPath executed", err)
+		parallel.ForEach(filePathSystemTrx, func(item string, _ int) {
+			wg.Add(1)
+			defer wg.Done()
+			data, _ := s.parseSystemTrxFile(ctx, afs, item)
+			sliceMutex.Lock()
+			returnData = append(returnData, data...)
+			sliceMutex.Unlock()
+		})
 
-	if err != nil {
-		return
+		wg.Wait()
 	}
-
-	sliceMutex := sync.Mutex{}
-	wg := sync.WaitGroup{}
-
-	parallel.ForEach(filePathSystemTrx, func(item string, _ int) {
-		wg.Add(1)
-		defer wg.Done()
-		data, _ := s.parseSystemTrxFile(ctx, afs, item)
-		sliceMutex.Lock()
-		returnData = append(returnData, data...)
-		sliceMutex.Unlock()
-	})
-
-	wg.Wait()
 
 	return
 }

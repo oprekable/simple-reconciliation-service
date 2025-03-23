@@ -16,9 +16,9 @@ func TestNewRepositories(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
 		args args
 		want *Repositories
+		name string
 	}{
 		{
 			name: "Ok",
