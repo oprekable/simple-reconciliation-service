@@ -180,7 +180,7 @@ func (s *Svc) importReconcileMapToDB(ctx context.Context, min float64, max float
 func (s *Svc) parseBankTrxFile(ctx context.Context, afs afero.Fs, item FilePathBankTrx) (returnData []*banks.BankTrxData, err error) {
 	var bankParser banks.ReconcileBankData
 	var f afero.File
-	f, err = afs.Open(item.FilePath)
+	bank := strings.ToUpper(item.Bank)
 
 	defer func() {
 		if f != nil {
@@ -188,34 +188,42 @@ func (s *Svc) parseBankTrxFile(ctx context.Context, afs afero.Fs, item FilePathB
 		}
 	}()
 
-	bank := strings.ToUpper(item.Bank)
-
-	switch bank {
-	case string(banks.BCABankParser):
-		{
-			bankParser, err = bca.NewBankParser(
-				bank,
-				csv.NewReader(f),
-				true,
-			)
-		}
-	case string(banks.BNIBankParser):
-		{
-			bankParser, err = bni.NewBankParser(
-				bank,
-				csv.NewReader(f),
-				true,
-			)
-		}
-	default:
-		{
-			bankParser, err = default_bank.NewBankParser(
-				bank,
-				csv.NewReader(f),
-				true,
-			)
-		}
-	}
+	_, err = hunch.Waterfall(
+		ctx,
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
+			f, e = afs.Open(item.FilePath)
+			return
+		},
+		func(c context.Context, _ interface{}) (r interface{}, e error) {
+			switch bank {
+			case string(banks.BCABankParser):
+				{
+					bankParser, e = bca.NewBankParser(
+						bank,
+						csv.NewReader(f),
+						true,
+					)
+				}
+			case string(banks.BNIBankParser):
+				{
+					bankParser, e = bni.NewBankParser(
+						bank,
+						csv.NewReader(f),
+						true,
+					)
+				}
+			default:
+				{
+					bankParser, e = default_bank.NewBankParser(
+						bank,
+						csv.NewReader(f),
+						true,
+					)
+				}
+			}
+			return
+		},
+	)
 
 	log.Err(ctx, "[process.NewSvc] parseBankTrxFiles parse ("+bank+") - '"+item.Bank+"' executed", err)
 
